@@ -1,0 +1,22 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
+env/
+.venv/
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Ignore pictures and docs directories
+pictures/*
+docs/*

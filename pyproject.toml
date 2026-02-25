@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "srpski-istoricar"
+version = "0.1.0"
+description = ""
+authors = ["Vitomir Jovanović <vitomir.jovanovic@bosch.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.0"
+flask-cors = "^4.0.0"
+openai = ">=2.8.0"
+qdrant-client = {version = "^1.7.3", extras = ["fastembed"]}
+python-dotenv = "^1.0.0"
+pypdf = "^5.1.0"
+pytesseract = "^0.3.13"
+pdf2image = "^1.17.0"
+pillow = "^11.0.0"
+tqdm = "^4.67.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
