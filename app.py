@@ -1,6 +1,6 @@
 """
 Српски историчар - RAG Chat Agent
-A RAG system using OpenAI and Qdrant
+A RAG system using OpenAI and FAISS
 """
 import os
 import asyncio
@@ -8,20 +8,22 @@ from typing import Annotated
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 from openai import AsyncOpenAI
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+import faiss
+import numpy as np
+import pickle
+from pathlib import Path
 import uuid
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='pictures', static_url_path='/static')
 CORS(app)
 
 # Configuration
-QDRANT_URL = os.getenv("QDRANT_URL", ":memory:")  # Use in-memory by default
-QDRANT_PATH = os.getenv("QDRANT_PATH", "./qdrant_data")  # Or persistent path  
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
+FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
 COLLECTION_NAME = "serbian_history"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
@@ -33,56 +35,53 @@ openai_client = AsyncOpenAI(
     base_url=OPENAI_BASE_URL
 )
 
-# Try to initialize Qdrant client (with fallback)
-QDRANT_AVAILABLE = False
-qdrant_client = None
+# Try to initialize FAISS index (with fallback)
+FAISS_AVAILABLE = False
+faiss_index = None
+faiss_metadata = []
 
 try:
-    # Try in-memory or local path first
-    if QDRANT_URL == ":memory:":
-        qdrant_client = QdrantClient(location=":memory:")
-        print(f"✓ Qdrant in-memory mode initialized")
-        QDRANT_AVAILABLE = True
-    elif QDRANT_URL.startswith("http"):
-        # Try server connection
-        qdrant_client = QdrantClient(url=QDRANT_URL, timeout=5)
-        qdrant_client.get_collections()
-        print(f"✓ Qdrant connected: {QDRANT_URL}")
-        QDRANT_AVAILABLE = True
-    else:
-        # Use local persistent storage
-        qdrant_client = QdrantClient(path=QDRANT_URL)
-        print(f"✓ Qdrant local storage: {QDRANT_URL}")
-        QDRANT_AVAILABLE = True
-except Exception as e:
-    print(f"⚠️  Qdrant NOT available: {e}")
-    print(f"⚠️  Running in FALLBACK mode (without RAG)")
-    QDRANT_AVAILABLE = False
-
-
-def initialize_qdrant_collection():
-    """Initialize Qdrant collection if it doesn't exist"""
-    global QDRANT_AVAILABLE
+    # Create data directory if it doesn't exist
+    Path(FAISS_INDEX_PATH).parent.mkdir(parents=True, exist_ok=True)
     
-    if not QDRANT_AVAILABLE:
-        print("Skipping Qdrant initialization (not available)")
+    # Try to load existing index
+    if os.path.exists(FAISS_INDEX_PATH) and os.path.exists(FAISS_METADATA_PATH):
+        faiss_index = faiss.read_index(FAISS_INDEX_PATH)
+        with open(FAISS_METADATA_PATH, 'rb') as f:
+            faiss_metadata = pickle.load(f)
+        print(f"✓ FAISS index loaded: {faiss_index.ntotal} vectors")
+        FAISS_AVAILABLE = True
+    else:
+        # Create new empty index (dimension 1536 for OpenAI embeddings)
+        faiss_index = faiss.IndexFlatL2(1536)
+        faiss_metadata = []
+        print(f"✓ FAISS new index created (empty)")
+        FAISS_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️  FAISS NOT available: {e}")
+    print(f"⚠️  Running in FALLBACK mode (without RAG)")
+    FAISS_AVAILABLE = False
+
+
+def save_faiss_index():
+    """Save FAISS index and metadata to disk"""
+    global faiss_index, faiss_metadata
+    
+    if not FAISS_AVAILABLE or faiss_index is None:
+        print("Skipping FAISS save (not available)")
         return
     
     try:
-        collections = qdrant_client.get_collections().collections
-        collection_names = [col.name for col in collections]
+        # Ensure directory exists
+        Path(FAISS_INDEX_PATH).parent.mkdir(parents=True, exist_ok=True)
         
-        if COLLECTION_NAME not in collection_names:
-            qdrant_client.create_collection(
-                collection_name=COLLECTION_NAME,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-            )
-            print(f"✓ Created collection: {COLLECTION_NAME}")
-        else:
-            print(f"✓ Collection {COLLECTION_NAME} already exists")
+        # Save index and metadata
+        faiss.write_index(faiss_index, FAISS_INDEX_PATH)
+        with open(FAISS_METADATA_PATH, 'wb') as f:
+            pickle.dump(faiss_metadata, f)
+        print(f"✓ FAISS index saved: {faiss_index.ntotal} vectors")
     except Exception as e:
-        print(f"✗ Error initializing Qdrant: {e}")
-        QDRANT_AVAILABLE = False
+        print(f"✗ Error saving FAISS index: {e}")
 
 
 async def get_embedding(text: str) -> list[float]:
@@ -96,27 +95,26 @@ async def get_embedding(text: str) -> list[float]:
 
 async def search_knowledge_base(query: str) -> str:
     """Search the Serbian history knowledge base for relevant information"""
-    if not QDRANT_AVAILABLE:
+    if not FAISS_AVAILABLE or faiss_index is None or faiss_index.ntotal == 0:
         return ""  # Return empty context in fallback mode
     
     try:
         # Get query embedding
         query_embedding = await get_embedding(query)
+        query_vector = np.array([query_embedding], dtype='float32')
         
-        # Search in Qdrant
-        search_result = qdrant_client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_embedding,
-            limit=3
-        )
+        # Search in FAISS (k=3 for top 3 results)
+        k = min(3, faiss_index.ntotal)  # Don't search for more items than we have
+        distances, indices = faiss_index.search(query_vector, k)
         
-        if not search_result:
+        if len(indices[0]) == 0:
             return "Нажалост, нисам пронашао релевантне информације у бази знања. База података можда још није попуњена."
         
         # Format results
         context = "Релевантне информације из базе знања:\n\n"
-        for idx, hit in enumerate(search_result, 1):
-            context += f"{idx}. {hit.payload.get('text', '')}\n\n"
+        for idx, i in enumerate(indices[0], 1):
+            if i < len(faiss_metadata):
+                context += f"{idx}. {faiss_metadata[i].get('text', '')}\n\n"
         
         return context
     except Exception as e:
@@ -130,7 +128,7 @@ async def create_agent_response(user_message: str) -> str:
         context = await search_knowledge_base(user_message)
         
         # Create system message with context
-        if QDRANT_AVAILABLE and context:
+        if FAISS_AVAILABLE and context:
             # Full RAG mode
             system_message = "Ти си виртуелни српски историчар. Одговарај на питања на основу докумената из базе знања. Буди прецизан, научан и неутралан."
             user_content = f"Контекст из базе знања:\n{context}\n\nКорисниково питање: {user_message}"
@@ -198,10 +196,11 @@ def health():
     """Health check endpoint"""
     return jsonify({
         'status': 'ok',
-        'qdrant_available': QDRANT_AVAILABLE,
-        'qdrant_url': QDRANT_URL if QDRANT_URL.startswith("http") else "local storage",
+        'faiss_available': FAISS_AVAILABLE,
+        'faiss_index_path': FAISS_INDEX_PATH,
+        'vectors_count': faiss_index.ntotal if faiss_index else 0,
         'collection': COLLECTION_NAME,
-        'mode': 'RAG' if QDRANT_AVAILABLE else 'FALLBACK (no RAG)'
+        'mode': 'RAG' if FAISS_AVAILABLE else 'FALLBACK (no RAG)'
     })
 
 
@@ -210,24 +209,19 @@ if __name__ == '__main__':
     print("🇷🇸 СРПСКИ ИСТОРИЧАР - RAG Chat System")
     print("="*70)
     
-    # Initialize Qdrant collection
-    initialize_qdrant_collection()
-    
     # Show status
-    if QDRANT_URL == ":memory:":
-        print(f"\nQdrant: In-Memory Mode")
-    elif QDRANT_URL.startswith("http"):
-        print(f"\nQdrant: Server Mode - {QDRANT_URL}")
-    else:
-        print(f"\nQdrant: Local Storage - {QDRANT_URL}")
+    print(f"\nFAISS Index: {FAISS_INDEX_PATH}")
+    print(f"Metadata: {FAISS_METADATA_PATH}")
     print(f"Collection: {COLLECTION_NAME}")
-    print(f"Mode: {'✓ RAG (with documents)' if QDRANT_AVAILABLE else '⚠️  FALLBACK (without documents)'}")
+    print(f"Vectors: {faiss_index.ntotal if faiss_index else 0}")
+    print(f"Mode: {'✓ RAG (with documents)' if FAISS_AVAILABLE and faiss_index and faiss_index.ntotal > 0 else '⚠️  FALLBACK (without documents)'}")
     
-    if not QDRANT_AVAILABLE:
+    if not FAISS_AVAILABLE or not faiss_index or faiss_index.ntotal == 0:
         print("\n" + "="*70)
-        print("⚠️  WARNING: Running without Qdrant / RAG functionality")
+        print("⚠️  WARNING: Running without FAISS / RAG functionality")
         print("The chatbot will work but without access to document database.")
-        print("To enable full RAG mode, start Qdrant server first.")
+        print("To enable full RAG mode, populate the database first.")
+        print("Run: python populate_database.py")
         print("="*70)
     
     print("\nStarting Flask server...\n")

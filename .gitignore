@@ -20,3 +20,6 @@ env/
 # Ignore pictures and docs directories
 pictures/*
 docs/*
+
+# Specific files
+srpski-istoricar.rs.txt

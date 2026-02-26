@@ -1,7 +1,7 @@
 """
 PDF Parser - DRY RUN verzija
-Ekstraktuje tekst iz PDF-ova i čuva u JSON fajlove (bez Qdrant baze).
-Kasnije možeš uploadovati te fajlove kada pokreneš Qdrant.
+Ekstraktuje tekst iz PDF-ova i čuva u JSON fajlove (bez FAISS baze).
+Kasnije možeš uploadovati te fajlove u FAISS.
 """
 import os
 import json
@@ -316,7 +316,7 @@ if __name__ == "__main__":
 def main():
     """Glavna funkcija"""
     print("\n" + "="*70)
-    print("🇷🇸 PDF OCR Parser - DRY RUN (bez Qdrant-a)")
+    print("🇷🇸 PDF OCR Parser - DRY RUN (bez FAISS-a)")
     print("="*70)
     print("Ekstraktuje tekst iz PDF-ova i čuva u JSON fajlove")
     print("="*70 + "\n")
@@ -368,9 +368,9 @@ def main():
     print("\n" + "="*70)
     print("SLEDEĆI KORACI:")
     print("="*70)
-    print("1. Pokreni Qdrant server (kada rešiš Docker problem)")
-    print("2. Pokreni: poetry run python upload_to_qdrant.py")
-    print("3. To će uploadovati sve ekstraktovane dokumente u Qdrant")
+    print("1. Pokreni: poetry run python upload_to_faiss.py")
+    print("2. To će uploadovati sve ekstraktovane dokumente u FAISS")
+    print("3. FAISS baza je potpuno lokalna - nema potrebe za serverom")
     print("="*70 + "\n")
 
 

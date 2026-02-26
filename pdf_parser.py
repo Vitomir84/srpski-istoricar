@@ -1,7 +1,7 @@
 """
 OCR Parser za PDF dokumente o srpskoj istoriji
 Parsuje PDF fajlove iz foldera (novi_vek, rani_vek, srednji_vek, ostalo) 
-i dodaje ih u Qdrant vektorsku bazu sa metadata o vremenskoj periodizaciji.
+i dodaje ih u FAISS vektorsku bazu sa metadata o vremenskoj periodizaciji.
 """
 import os
 import asyncio
@@ -17,8 +17,9 @@ from pdf2image import convert_from_path
 from PIL import Image
 
 # Database and Embeddings
-from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, Distance, VectorParams
+import faiss
+import numpy as np
+import pickle
 from openai import AsyncOpenAI
 import uuid
 from dotenv import load_dotenv
@@ -27,7 +28,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
+FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
 COLLECTION_NAME = "serbian_history"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
@@ -46,25 +48,48 @@ CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 
 # Initialize clients
-qdrant_client = QdrantClient(url=QDRANT_URL)
 openai_client = AsyncOpenAI(
     api_key=OPENAI_API_KEY,
     base_url=OPENAI_BASE_URL
 )
 
+# Global index and metadata
+faiss_index = None
+faiss_metadata = []
 
-def ensure_collection_exists():
-    """Create collection if it doesn't exist"""
-    try:
-        qdrant_client.get_collection(COLLECTION_NAME)
-        print(f"✓ Kolekcija '{COLLECTION_NAME}' postoji")
-    except Exception:
-        print(f"Kreiram novu kolekciju '{COLLECTION_NAME}'...")
-        qdrant_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
-        )
-        print("✓ Kolekcija kreirana")
+
+def load_faiss_index():
+    """Load or create FAISS index"""
+    global faiss_index, faiss_metadata
+    
+    # Create directory if needed
+    Path(FAISS_INDEX_PATH).parent.mkdir(parents=True, exist_ok=True)
+    
+    # Try to load existing index
+    if os.path.exists(FAISS_INDEX_PATH) and os.path.exists(FAISS_METADATA_PATH):
+        faiss_index = faiss.read_index(FAISS_INDEX_PATH)
+        with open(FAISS_METADATA_PATH, 'rb') as f:
+            faiss_metadata = pickle.load(f)
+        print(f"✓ Loaded existing index: {faiss_index.ntotal} vectors")
+    else:
+        # Create new index
+        faiss_index = faiss.IndexFlatL2(1536)  # OpenAI embedding dimension
+        faiss_metadata = []
+        print(f"✓ Created new empty index")
+
+
+def save_faiss_index():
+    """Save FAISS index to disk"""
+    global faiss_index, faiss_metadata
+    
+    # Ensure directory exists
+    Path(FAISS_INDEX_PATH).parent.mkdir(parents=True, exist_ok=True)
+    
+    # Save index and metadata
+    faiss.write_index(faiss_index, FAISS_INDEX_PATH)
+    with open(FAISS_METADATA_PATH, 'wb') as f:
+        pickle.dump(faiss_metadata, f)
+    print(f"✓ Saved index: {faiss_index.ntotal} vectors")
 
 
 def extract_text_from_pdf(pdf_path: Path) -> str:
@@ -177,29 +202,28 @@ async def get_embedding(text: str) -> List[float]:
 
 
 async def add_chunk_to_db(chunk: str, metadata: Dict) -> bool:
-    """Dodaj jedan chunk u Qdrant bazu"""
+    """Dodaj jedan chunk u FAISS bazu"""
+    global faiss_index, faiss_metadata
+    
     try:
         # Dobavi embedding
         embedding = await get_embedding(chunk)
         if not embedding:
             return False
         
-        # Kreiraj point
-        point_id = str(uuid.uuid4())
-        point = PointStruct(
-            id=point_id,
-            vector=embedding,
-            payload={
-                "text": chunk,
-                **metadata
-            }
-        )
+        # Convert to numpy array
+        vector = np.array([embedding], dtype='float32')
         
-        # Upload u Qdrant
-        qdrant_client.upsert(
-            collection_name=COLLECTION_NAME,
-            points=[point]
-        )
+        # Add to FAISS index
+        faiss_index.add(vector)
+        
+        # Add metadata
+        doc_metadata = {
+            "id": str(uuid.uuid4()),
+            "text": chunk,
+            **metadata
+        }
+        faiss_metadata.append(doc_metadata)
         
         return True
         
@@ -256,6 +280,9 @@ async def process_pdf_file(pdf_path: Path, period: str) -> int:
         if i % 5 == 0:
             print(f"    ⏳ {i}/{len(chunks)} chunkova dodato")
     
+    # Save index after processing each file
+    save_faiss_index()
+    
     print(f"    ✅ Završeno - {successful}/{len(chunks)} chunkova uspešno")
     return successful
 
@@ -303,8 +330,8 @@ async def process_all_documents():
     print("🇷🇸 SRPSKI ISTORIČAR - PDF OCR Parser")
     print("="*70)
     
-    # Proveri da li postoji kolekcija
-    ensure_collection_exists()
+    # Load or create FAISS index
+    load_faiss_index()
     
     # Statistike
     total_stats = {
@@ -336,8 +363,9 @@ async def process_all_documents():
     
     # Proveri bazu
     try:
-        collection_info = qdrant_client.get_collection(COLLECTION_NAME)
-        print(f"\n💾 Ukupno dokumenata u bazi:    {collection_info.points_count}")
+        print(f"\n💾 Ukupno dokumenata u bazi:    {faiss_index.ntotal}")
+        print(f"   Index file: {FAISS_INDEX_PATH}")
+        print(f"   Metadata file: {FAISS_METADATA_PATH}")
     except Exception as e:
         print(f"⚠️  Ne mogu proveriti stanje baze: {e}")
     

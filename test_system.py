@@ -12,7 +12,7 @@ def check_imports():
         'pytesseract': 'pytesseract',
         'pdf2image': 'pdf2image',
         'PIL': 'Pillow',
-        'qdrant_client': 'qdrant-client',
+        'faiss': 'faiss-cpu',
         'openai': 'openai',
         'tqdm': 'tqdm'
     }
@@ -65,40 +65,43 @@ def check_tesseract():
         return False
 
 
-def check_qdrant():
-    """Proveri konekciju sa Qdrant bazom"""
-    print("\n🔍 Proveravam Qdrant bazu...\n")
+def check_faiss():
+    """Proveri FAISS bazu"""
+    print("\n🔍 Proveravam FAISS bazu...\n")
     
     try:
-        from qdrant_client import QdrantClient
+        import faiss
+        import pickle
+        from pathlib import Path
         import os
         from dotenv import load_dotenv
         
         load_dotenv()
-        qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        index_path = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
+        metadata_path = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
         
-        client = QdrantClient(url=qdrant_url)
-        collections = client.get_collections()
+        print(f"  ✅ FAISS library verzija: {faiss.__version__}")
         
-        print(f"  ✅ Qdrant server dostupan na {qdrant_url}")
-        print(f"  📊 Broj kolekcija: {len(collections.collections)}")
-        
-        # Proveri serbian_history kolekciju
-        try:
-            info = client.get_collection("serbian_history")
-            print(f"  ✅ Kolekcija 'serbian_history' postoji")
-            print(f"      Dokumenata: {info.points_count}")
-            print(f"      Vektor dimenzija: {info.config.params.vectors.size}")
-        except Exception:
-            print(f"  ℹ️  Kolekcija 'serbian_history' ne postoji (biće kreirana)")
+        # Proveri da li postoji index
+        if os.path.exists(index_path) and os.path.exists(metadata_path):
+            index = faiss.read_index(index_path)
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+            
+            print(f"  ✅ FAISS index pronađen: {index_path}")
+            print(f"  📋 Broj vektora: {index.ntotal}")
+            print(f"  📋 Dimenzija vektora: {index.d}")
+            print(f"  📋 Metadata zapisa: {len(metadata)}")
+        else:
+            print(f"  ℹ️  FAISS index ne postoji (biće kreiran)")
+            print(f"      Index: {index_path}")
+            print(f"      Metadata: {metadata_path}")
         
         return True
         
     except Exception as e:
-        print(f"  ❌ Qdrant NIJE dostupan!")
-        print(f"      Greška: {e}")
-        print(f"\n  🐳 Pokreni Qdrant sa Docker:")
-        print(f"      docker run -p 6333:6333 qdrant/qdrant")
+        print(f"  ❌ FAISS greška: {e}")
+        print(f"      Instaliraj: pip install faiss-cpu")
         return False
 
 
@@ -165,7 +168,7 @@ def main():
     checks = [
         ("Python biblioteke", check_imports),
         ("Tesseract OCR", check_tesseract),
-        ("Qdrant baza", check_qdrant),
+        ("FAISS baza", check_faiss),
         ("OpenAI API", check_openai),
         ("PDF fajlovi", check_pdf_files)
     ]

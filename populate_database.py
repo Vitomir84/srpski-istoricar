@@ -1,12 +1,14 @@
 """
-Script to populate Qdrant database with Serbian history documents
+Script to populate FAISS database with Serbian history documents
 """
 import os
 import asyncio
 from typing import List
 from openai import AsyncOpenAI
-from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct
+import faiss
+import numpy as np
+import pickle
+from pathlib import Path
 import uuid
 from dotenv import load_dotenv
 
@@ -14,17 +16,55 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
+FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
 COLLECTION_NAME = "serbian_history"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
 # Initialize clients
-qdrant_client = QdrantClient(url=QDRANT_URL)
 openai_client = AsyncOpenAI(
     api_key=OPENAI_API_KEY,
     base_url=OPENAI_BASE_URL
 )
+
+# Global index and metadata
+faiss_index = None
+faiss_metadata = []
+
+
+def load_faiss_index():
+    """Load or create FAISS index"""
+    global faiss_index, faiss_metadata
+    
+    # Create directory if needed
+    Path(FAISS_INDEX_PATH).parent.mkdir(parents=True, exist_ok=True)
+    
+    # Try to load existing index
+    if os.path.exists(FAISS_INDEX_PATH) and os.path.exists(FAISS_METADATA_PATH):
+        faiss_index = faiss.read_index(FAISS_INDEX_PATH)
+        with open(FAISS_METADATA_PATH, 'rb') as f:
+            faiss_metadata = pickle.load(f)
+        print(f"✓ Loaded existing index: {faiss_index.ntotal} vectors")
+    else:
+        # Create new index
+        faiss_index = faiss.IndexFlatL2(1536)  # OpenAI embedding dimension
+        faiss_metadata = []
+        print(f"✓ Created new empty index")
+
+
+def save_faiss_index():
+    """Save FAISS index to disk"""
+    global faiss_index, faiss_metadata
+    
+    # Ensure directory exists
+    Path(FAISS_INDEX_PATH).parent.mkdir(parents=True, exist_ok=True)
+    
+    # Save index and metadata
+    faiss.write_index(faiss_index, FAISS_INDEX_PATH)
+    with open(FAISS_METADATA_PATH, 'wb') as f:
+        pickle.dump(faiss_metadata, f)
+    print(f"✓ Saved index: {faiss_index.ntotal} vectors")
 
 
 async def get_embedding(text: str) -> List[float]:
@@ -37,7 +77,9 @@ async def get_embedding(text: str) -> List[float]:
 
 
 async def add_document(text: str, metadata: dict = None) -> str:
-    """Add a single document to Qdrant"""
+    """Add a single document to FAISS"""
+    global faiss_index, faiss_metadata
+    
     if not text.strip():
         print("Skipping empty document")
         return None
@@ -46,25 +88,22 @@ async def add_document(text: str, metadata: dict = None) -> str:
         # Get embedding
         embedding = await get_embedding(text)
         
-        # Create point
-        point_id = str(uuid.uuid4())
-        point = PointStruct(
-            id=point_id,
-            vector=embedding,
-            payload={
-                "text": text,
-                **(metadata or {})
-            }
-        )
+        # Convert to numpy array
+        vector = np.array([embedding], dtype='float32')
         
-        # Upload to Qdrant
-        qdrant_client.upsert(
-            collection_name=COLLECTION_NAME,
-            points=[point]
-        )
+        # Add to FAISS index
+        faiss_index.add(vector)
+        
+        # Add metadata
+        doc_metadata = {
+            "id": str(uuid.uuid4()),
+            "text": text,
+            **(metadata or {})
+        }
+        faiss_metadata.append(doc_metadata)
         
         print(f"✓ Added document: {text[:100]}...")
-        return point_id
+        return doc_metadata["id"]
     except Exception as e:
         print(f"✗ Error adding document: {e}")
         return None
@@ -115,12 +154,15 @@ async def add_sample_documents():
         },
     ]
     
-    print("Adding sample documents to Qdrant database...\n")
+    print("Adding sample documents to FAISS database...\n")
     
     for i, doc in enumerate(sample_documents, 1):
         print(f"\n[{i}/{len(sample_documents)}]")
         await add_document(doc["text"], doc.get("metadata"))
         await asyncio.sleep(0.5)  # Rate limit protection
+    
+    # Save after adding documents
+    save_faiss_index()
     
     print("\n" + "="*60)
     print("✓ Successfully added all sample documents!")
@@ -136,6 +178,9 @@ async def load_from_file(file_path: str):
         print(f"Loading documents from: {file_path}")
         await add_documents_from_text(content)
         
+        # Save after loading from file
+        save_faiss_index()
+        
     except FileNotFoundError:
         print(f"File not found: {file_path}")
     except Exception as e:
@@ -144,17 +189,20 @@ async def load_from_file(file_path: str):
 
 async def check_database_status():
     """Check current database status"""
+    global faiss_index, faiss_metadata
+    
     try:
-        collection_info = qdrant_client.get_collection(COLLECTION_NAME)
-        points_count = collection_info.points_count
+        vectors_count = faiss_index.ntotal if faiss_index else 0
         
         print("\n" + "="*60)
         print(f"Database Status:")
         print(f"  Collection: {COLLECTION_NAME}")
-        print(f"  Total documents: {points_count}")
+        print(f"  Total documents: {vectors_count}")
+        print(f"  Index file: {FAISS_INDEX_PATH}")
+        print(f"  Metadata file: {FAISS_METADATA_PATH}")
         print("="*60 + "\n")
         
-        return points_count
+        return vectors_count
     except Exception as e:
         print(f"Error checking database: {e}")
         return 0
@@ -165,6 +213,9 @@ async def main():
     print("="*60)
     print("Српски историчар - Database Population Tool")
     print("="*60 + "\n")
+    
+    # Load existing index
+    load_faiss_index()
     
     # Check current status
     await check_database_status()
