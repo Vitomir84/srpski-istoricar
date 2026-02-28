@@ -264,6 +264,80 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             display: none;
         }
+
+        /* Period Selection Styles */
+        .period-selection {
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .period-selection h2 {
+            color: #4a5ab0;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 24px;
+        }
+
+        .period-selection p {
+            font-weight: 500;
+            margin-bottom: 30px;
+            color: #2a2a2a;
+            line-height: 1.6;
+        }
+
+        .period-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .period-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .period-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .period-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .period-card p {
+            color: #666;
+            font-size: 13px;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .selected-period-badge {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -273,13 +347,43 @@
             <p class="subtitle">Ваш дигитални водич кроз српску историју</p>
             <p>Постављајте питања о историјским документима, личностима и догађајима из српске историје</p>
             <p class="info">База знања се састоји од јавно доступних извора са сајта rastko.rs. Постоји могућност додавања нових књига уз сагласност аутора или уколико не крше ауторска права.</p>
+            <span id="selectedPeriodBadge" class="selected-period-badge hidden"></span>
         </div>
         
         <div class="chat-container" id="chatContainer">
-            <div class="welcome-message">
+            <!-- Period Selection Screen -->
+            <div class="period-selection" id="periodSelection">
+                <h2>Изаберите период</h2>
+                <p>Изаберите историјски период о којем желите да разговарате:</p>
+                <div class="period-grid">
+                    <div class="period-card" onclick="selectPeriod('svi')">
+                        <h3>🔍 Сви периоди</h3>
+                        <p>Претражуј целу базу</p>
+                    </div>
+                    <div class="period-card" onclick="selectPeriod('rani_vek')">
+                        <h3>Рани средњи век</h3>
+                        <p>Рана историја српског народа</p>
+                    </div>
+                    <div class="period-card" onclick="selectPeriod('srednji_vek')">
+                        <h3>Средњи век</h3>
+                        <p>Српска средњовековна држава</p>
+                    </div>
+                    <div class="period-card" onclick="selectPeriod('novi_vek')">
+                        <h3>Нови век</h3>
+                        <p>Модерна српска историја</p>
+                    </div>
+                    <div class="period-card" onclick="selectPeriod('ostalo')">
+                        <h3>Остало</h3>
+                        <p>Општа питања и теме</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Message (shown after period selection) -->
+            <div class="welcome-message hidden" id="welcomeMessage">
                 <h2>Добродошли!</h2>
                 <p>Постављај питања о српској историји и добићете одговоре базиране на знању из базе података.</p>
-                <p style="margin-top: 10px; font-size: 14px;">Пример: "Ко је био Стефан Немања?" или "Казуј ми о Косовској бици"</p>
+                <p style="margin-top: 10px; font-size: 14px;">Пример: "Ко је био Стефан Немања?" или "Кажи ми о Косовској бици"</p>
             </div>
         </div>
 
@@ -289,8 +393,9 @@
                 id="userInput" 
                 placeholder="Поставите питање о српској историји..." 
                 autocomplete="off"
+                disabled
             />
-            <button id="sendBtn">Пошаљи</button>
+            <button id="sendBtn" disabled>Пошаљи</button>
         </div>
     </div>
 
@@ -298,9 +403,47 @@
         const chatContainer = document.getElementById('chatContainer');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
+        const periodSelection = document.getElementById('periodSelection');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const selectedPeriodBadge = document.getElementById('selectedPeriodBadge');
 
-        // Auto-focus on input
-        userInput.focus();
+        // Store selected period
+        let selectedPeriod = null;
+        let periodSelected = false; // Track if user made a selection
+
+        // Period names mapping
+        const periodNames = {
+            'svi': 'Сви периоди',
+            'rani_vek': 'Рани средњи век',
+            'srednji_vek': 'Средњи век',
+            'novi_vek': 'Нови век',
+            'ostalo': 'Остало'
+        };
+
+        // Handle period selection
+        function selectPeriod(period) {
+            // If 'svi' selected, set to null to search all periods
+            selectedPeriod = (period === 'svi') ? null : period;
+            periodSelected = true; // Mark that selection was made
+            
+            // Hide period selection
+            periodSelection.classList.add('hidden');
+            
+            // Show welcome message
+            welcomeMessage.classList.remove('hidden');
+            
+            // Update badge
+            selectedPeriodBadge.textContent = `Период: ${periodNames[period]}`;
+            selectedPeriodBadge.classList.remove('hidden');
+            
+            // Enable input and button
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+
+        // Make selectPeriod available globally
+        window.selectPeriod = selectPeriod;
 
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
@@ -348,7 +491,7 @@
         async function sendMessage() {
             const message = userInput.value.trim();
             
-            if (!message) return;
+            if (!message || !periodSelected) return;
             
             // Add user message
             addMessage(message, true);
@@ -367,7 +510,10 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ 
+                        message: message,
+                        period: selectedPeriod
+                    })
                 });
                 
                 const data = await response.json();

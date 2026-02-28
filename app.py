@@ -93,7 +93,7 @@ async def get_embedding(text: str) -> list[float]:
     return response.data[0].embedding
 
 
-async def search_knowledge_base(query: str) -> str:
+async def search_knowledge_base(query: str, period: str = None) -> str:
     """Search the Serbian history knowledge base for relevant information"""
     if not FAISS_AVAILABLE or faiss_index is None or faiss_index.ntotal == 0:
         return ""  # Return empty context in fallback mode
@@ -103,46 +103,69 @@ async def search_knowledge_base(query: str) -> str:
         query_embedding = await get_embedding(query)
         query_vector = np.array([query_embedding], dtype='float32')
         
-        # Search in FAISS (k=3 for top 3 results)
-        k = min(3, faiss_index.ntotal)  # Don't search for more items than we have
+        # Search in FAISS (k=20 to have enough after filtering)
+        k = min(20, faiss_index.ntotal)  # Don't search for more items than we have
         distances, indices = faiss_index.search(query_vector, k)
         
         if len(indices[0]) == 0:
             return "Нажалост, нисам пронашао релевантне информације у бази знања. База података можда још није попуњена."
         
+        # Filter results by period if specified
+        filtered_results = []
+        for i in indices[0]:
+            if i < len(faiss_metadata):
+                doc = faiss_metadata[i]
+                # If period is specified, only include matching documents
+                if period is None or doc.get('period') == period:
+                    filtered_results.append(doc)
+                    if len(filtered_results) >= 5:  # Limit to top 5
+                        break
+        
+        if len(filtered_results) == 0:
+            return f"Нажалост, нисам пронашао релевантне информације за изабрани период у бази знања."
+        
         # Format results
         context = "Релевантне информације из базе знања:\n\n"
-        for idx, i in enumerate(indices[0], 1):
-            if i < len(faiss_metadata):
-                context += f"{idx}. {faiss_metadata[i].get('text', '')}\n\n"
+        for idx, doc in enumerate(filtered_results, 1):
+            context += f"{idx}. {doc.get('text', '')}\n\n"
         
         return context
     except Exception as e:
         return f"Грешка при претраживању базе знања: {str(e)}"
 
 
-async def create_agent_response(user_message: str) -> str:
+async def create_agent_response(user_message: str, period: str = None) -> str:
     """Create response using OpenAI with RAG"""
     try:
         # Search knowledge base for relevant information (if available)
-        context = await search_knowledge_base(user_message)
+        context = await search_knowledge_base(user_message, period)
         
         # Create system message with context
         if FAISS_AVAILABLE and context:
             # Full RAG mode
-            system_message = "Ти си виртуелни српски историчар. Одговарај на питања на основу докумената из базе знања. Буди прецизан, научан и неутралан."
+            system_message = (
+                "Ти си виртуелни српски историчар и научни асистент.\n\n"
+                "Имаш опште знање о српској историји али имаш и базу докумената коју увек треба да претражиш и извучеш из ње релевантне информације које треба да сложиш у одговор.\n"
+                "Увек треба да навадеш документе из којих црпиш информације.\n\n"
+                "Правила:\n"
+                "1. Одговарај научно и прецизно\n"
+                "2. Ако ниси сигуран, признај то\n"
+                "3. Увек наводи изворе и документе из којих црпиш информације\n"
+                "4. Тон је научан, неутралан и поуздан\n"
+                "5. Ако база знања није попуњена, обавести корисника да база можда још није попуњена и да ће одговор бити базиран на општем знању\n"
+                "6. Сваки документ је катогиризован по теми и периоду: нови_век, рани_век, средњи_век и остало.\n"
+            )
             user_content = f"Контекст из базе знања:\n{context}\n\nКорисниково питање: {user_message}"
         else:
             # Fallback mode without RAG
             system_message = (
                 "Ти си виртуелни српски историчар и научни асистент.\n\n"
-                "⚠️ НАПОМЕНА: Тренутно радиш у режиму без приступа бази докумената (RAG систем није доступан).\n"
-                "Одговарај на питања користећи своје опште знање о српској историји, али буди транспарентан о томе.\n\n"
+                "Имаш опште знање о српској историји \n"
                 "Правила:\n"
                 "1. Одговарај научно и прецизно\n"
                 "2. Ако ниси сигуран, признај то\n"
-                "3. На почетку одговора напомени да је база докумената тренутно недоступна\n"
-                "4. Тон је научан, неутралан и поуздан\n"
+                "3. Тон је научан, неутралан и поуздан\n"
+                "4. Ако база знања није попуњена, обавести корисника да база можда још није попуњена и да ће одговор бити базиран на општем знању\n"
             )
             user_content = user_message
         
@@ -176,6 +199,7 @@ def chat():
     try:
         data = request.json
         user_message = data.get('message', '')
+        period = data.get('period', None)
         
         if not user_message:
             return jsonify({'error': 'Message is required'}), 400
@@ -183,7 +207,7 @@ def chat():
         # Run async function in event loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(create_agent_response(user_message))
+        response = loop.run_until_complete(create_agent_response(user_message, period))
         loop.close()
         
         return jsonify({'response': response})
