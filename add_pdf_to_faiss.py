@@ -6,9 +6,13 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict
 import argparse
+import json
 
 # PDF Processing
 from pypdf import PdfReader
+import pytesseract
+from pdf2image import convert_from_path
+from PIL import Image
 
 # Database and Embeddings
 import faiss
@@ -26,6 +30,7 @@ FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.i
 FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+BIBLIOGRAPHY_FILE = Path("bibliografija.json")
 
 # Period mapping
 PERIODS = {
@@ -48,6 +53,58 @@ openai_client = AsyncOpenAI(
 # Global index and metadata
 faiss_index = None
 faiss_metadata = []
+bibliography = {}
+
+
+def load_bibliography():
+    """Load bibliography data from JSON file"""
+    global bibliography
+    
+    if BIBLIOGRAPHY_FILE.exists():
+        try:
+            with open(BIBLIOGRAPHY_FILE, 'r', encoding='utf-8') as f:
+                bibliography = json.load(f)
+            print(f"✓ Učitana bibliografija: {len(bibliography)} unosa")
+        except Exception as e:
+            print(f"⚠️  Greška pri učitavanju bibliografije: {e}")
+            bibliography = {}
+    else:
+        print(f"⚠️  Bibliografija nije pronađena: {BIBLIOGRAPHY_FILE}")
+        bibliography = {}
+
+
+def format_citation(filename: str) -> str:
+    """Format citation in the required format: Autor (godina). Naslov. Izdavač. strane"""
+    if filename not in bibliography:
+        return filename
+    
+    bib = bibliography[filename]
+    parts = []
+    
+    # Autor
+    if bib.get('autor'):
+        parts.append(bib['autor'])
+    
+    # Godina
+    if bib.get('godina'):
+        if parts:
+            parts[-1] += f" ({bib['godina']})"
+        else:
+            parts.append(f"({bib['godina']})")
+    
+    # Naslov
+    if bib.get('naslov'):
+        parts.append(bib['naslov'])
+    
+    # Izdavač
+    if bib.get('izdavac'):
+        parts.append(bib['izdavac'])
+    
+    # Strane
+    if bib.get('strane'):
+        parts.append(f"str. {bib['strane']}")
+    
+    return '. '.join(parts) if parts else filename
 
 
 def load_faiss_index():
@@ -87,9 +144,46 @@ def is_already_indexed(filename: str) -> bool:
     return False
 
 
-def extract_text_from_pdf(pdf_path: Path) -> str:
-    """Extract text from PDF file"""
+def extract_text_with_ocr(pdf_path: Path, max_pages: int = 50) -> str:
+    """
+    Koristi OCR (pytesseract) za ekstrakciju teksta iz PDF-a.
+    Konvertuje PDF u slike i radi OCR na svakoj stranici.
+    """
     try:
+        # Konvertuj PDF u slike (ograniči na max_pages da ne traje predugo)
+        print(f"    🔍 OCR u toku...")
+        images = convert_from_path(str(pdf_path), first_page=1, last_page=max_pages)
+        
+        text_parts = []
+        for i, image in enumerate(images, 1):
+            # Pytesseract za OCR - koristi srpski jezik
+            # Dodaj eng za bolje rezultate sa latiničnim tekstom
+            page_text = pytesseract.image_to_string(image, lang='srp+eng')
+            text_parts.append(page_text)
+            
+            if i % 10 == 0:
+                print(f"    📄 Procesovano {i}/{len(images)} stranica")
+        
+        text = "\n".join(text_parts)
+        print(f"    ✓ OCR završen - {len(text)} karaktera")
+        return text
+        
+    except Exception as e:
+        print(f"    ✗ OCR greška: {e}")
+        print(f"    💡 Proverite da li je Tesseract instaliran i u PATH-u")
+        print(f"    💡 Download: https://github.com/UB-Mannheim/tesseract/wiki")
+        return ""
+
+
+def extract_text_from_pdf(pdf_path: Path) -> str:
+    """
+    Ekstraktuje tekst iz PDF fajla.
+    Prvo pokušava direktnu ekstrakciju, zatim OCR ako nema teksta.
+    """
+    text = ""
+    
+    try:
+        # Pokušaj direktnu ekstrakciju teksta
         reader = PdfReader(str(pdf_path))
         text_parts = []
         
@@ -100,15 +194,19 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
         
         text = "\n".join(text_parts)
         
-        if text.strip():
-            print(f"    ✓ Ekstraktovano {len(text)} karaktera iz {len(reader.pages)} stranica")
+        # Proveri da li ima dovoljno teksta
+        if len(text.strip()) < 100:
+            print(f"    ⚠️  Malo teksta ekstraktovano ({len(text.strip())} karaktera), pokušavam OCR...")
+            text = extract_text_with_ocr(pdf_path)
         else:
-            print(f"    ⚠️  Nema teksta (potreban OCR)")
-        
-        return text
+            print(f"    ✓ Ekstraktovano {len(text)} karaktera iz {len(reader.pages)} stranica")
+            
     except Exception as e:
-        print(f"    ✗ Greška: {e}")
-        return ""
+        print(f"    ✗ Greška pri ekstrakciji: {e}")
+        print(f"    Pokušavam OCR...")
+        text = extract_text_with_ocr(pdf_path)
+    
+    return text
 
 
 def split_text_into_chunks(text: str, chunk_size: int = CHUNK_SIZE, 
@@ -200,12 +298,25 @@ async def process_pdf_file(pdf_path: Path, period: str, force: bool = False) -> 
     chunks = split_text_into_chunks(text)
     print(f"    📄 Kreirano {len(chunks)} chunkova")
     
+    # Get bibliographic data
+    citation = format_citation(filename)
+    bib_data = bibliography.get(filename, {})
+    
+    if citation != filename:
+        print(f"    📚 Referenca: {citation}")
+    
     # Base metadata
     base_metadata = {
         "period": period,
         "period_name": PERIODS.get(period, period),
         "source_file": filename,
-        "source_path": str(pdf_path.relative_to(Path.cwd()) if pdf_path.is_relative_to(Path.cwd()) else pdf_path)
+        "source_path": str(pdf_path.relative_to(Path.cwd()) if pdf_path.is_relative_to(Path.cwd()) else pdf_path),
+        "citation": citation,
+        "autor": bib_data.get('autor', ''),
+        "godina": bib_data.get('godina', ''),
+        "naslov": bib_data.get('naslov', ''),
+        "izdavac": bib_data.get('izdavac', ''),
+        "strane": bib_data.get('strane', '')
     }
     
     # Add chunks to database
@@ -258,6 +369,9 @@ async def main():
     print("\n" + "="*70)
     print("🇷🇸 DODAVANJE PDF-a U FAISS BAZU")
     print("="*70)
+    
+    # Load bibliography
+    load_bibliography()
     
     # Load existing index
     load_faiss_index()

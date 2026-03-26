@@ -23,6 +23,7 @@
             justify-content: center;
             align-items: center;
             position: relative;
+            overflow: hidden;
         }
         
         body::before {
@@ -38,16 +39,23 @@
 
         .container {
             width: 90%;
-            max-width: 800px;
+            max-width: 1400px;
             height: 90vh;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             overflow: hidden;
             position: relative;
             z-index: 1;
+        }
+
+        .main-chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
         }
 
         .header {
@@ -338,19 +346,149 @@
         .hidden {
             display: none !important;
         }
+
+        /* Documents Panel Styles */
+        .documents-toggle {
+            display: none; /* Hide toggle button since panel is always visible */
+        }
+
+        .documents-panel {
+            width: 380px;
+            height: 100%;
+            background: #f8f9fa;
+            border-left: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .documents-panel.active {
+            /* No need for active state since it's always visible */
+        }
+
+        .documents-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .documents-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .close-panel {
+            display: none; /* Hide close button since panel is always visible */
+        }
+
+        .documents-controls {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border: 1px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .documents-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .document-item {
+            margin-bottom: 12px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: white;
+        }
+
+        .document-item:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateX(-2px);
+        }
+
+        .document-item.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .document-checkbox {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .document-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .document-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .document-author {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .document-item-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .selected-count {
+            padding: 10px 20px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>ꒌ Српски историчар ꒌ</h1>
-            <p class="subtitle">Ваш дигитални водич кроз српску историју</p>
-            <p>Постављајте питања о историјским документима, личностима и догађајима из српске историје</p>
-            <p class="info">База знања се састоји од јавно доступних извора са сајта rastko.rs. Постоји могућност додавања нових књига уз сагласност аутора или уколико не крше ауторска права.</p>
-            <span id="selectedPeriodBadge" class="selected-period-badge hidden"></span>
-        </div>
-        
-        <div class="chat-container" id="chatContainer">
+        <!-- Main Chat Area -->
+        <div class="main-chat-area">
+            <div class="header">
+                <h1>🇷🇸 Српски историчар 🇷🇸</h1>
+                <p class="subtitle">Ваш дигитални водич кроз српску историју</p>
+                <p>Постављајте питања о историјским документима, личностима и догађајима из српске историје</p>
+                <p class="info">База знања се састоји од јавно доступних извора са сајта rastko.rs. Постоји могућност додавања нових књига уз сагласност аутора или уколико не крше ауторска права.</p>
+                <span id="selectedPeriodBadge" class="selected-period-badge hidden"></span>
+            </div>
+            
+            <div class="chat-container" id="chatContainer">
             <!-- Period Selection Screen -->
             <div class="period-selection" id="periodSelection">
                 <h2>Изаберите период</h2>
@@ -397,6 +535,24 @@
             />
             <button id="sendBtn" disabled>Пошаљи</button>
         </div>
+        </div>
+        
+        <!-- Documents Panel -->
+        <div class="documents-panel" id="documentsPanel">
+            <div class="documents-header">
+                <h3>📚 Документи</h3>
+            </div>
+            <div class="documents-controls">
+                <button class="control-btn" id="selectAllBtn">Изабери све</button>
+                <button class="control-btn" id="deselectAllBtn">Поништи све</button>
+            </div>
+            <div class="documents-list" id="documentsList">
+                <p style="text-align: center; color: #999; padding: 20px;">Учитавање докумената...</p>
+            </div>
+            <div class="selected-count" id="selectedCount">
+                Изабрано: 0 докумената
+            </div>
+        </div>
     </div>
 
     <script>
@@ -406,10 +562,19 @@
         const periodSelection = document.getElementById('periodSelection');
         const welcomeMessage = document.getElementById('welcomeMessage');
         const selectedPeriodBadge = document.getElementById('selectedPeriodBadge');
+        
+        // Documents panel elements
+        const documentsPanel = document.getElementById('documentsPanel');
+        const documentsList = document.getElementById('documentsList');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const deselectAllBtn = document.getElementById('deselectAllBtn');
+        const selectedCount = document.getElementById('selectedCount');
 
-        // Store selected period
+        // Store selected period and documents
         let selectedPeriod = null;
-        let periodSelected = false; // Track if user made a selection
+        let periodSelected = false;
+        let allDocuments = [];
+        let selectedDocuments = [];
 
         // Period names mapping
         const periodNames = {
@@ -419,6 +584,154 @@
             'novi_vek': 'Нови век',
             'ostalo': 'Остало'
         };
+
+        // Load documents from API
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+                
+                if (response.ok && data.documents) {
+                    allDocuments = data.documents;
+                    renderDocumentsList();
+                } else {
+                    documentsList.innerHTML = '<p style="text-align: center; color: #999;">Нема докумената у бази</p>';
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                documentsList.innerHTML = '<p style="text-align: center; color: #f44336;">Грешка при учитавању докумената</p>';
+            }
+        }
+
+        // Render documents list
+        function renderDocumentsList() {
+            if (allDocuments.length === 0) {
+                documentsList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нема докумената у бази</p>';
+                return;
+            }
+
+            documentsList.innerHTML = '';
+            
+            allDocuments.forEach((doc, index) => {
+                const div = document.createElement('div');
+                div.className = 'document-item';
+                div.id = `doc-${index}`;
+                
+                const itemContent = document.createElement('div');
+                itemContent.className = 'document-item-content';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'document-checkbox';
+                checkbox.id = `checkbox-${index}`;
+                checkbox.checked = selectedDocuments.includes(doc.filename);
+                
+                checkbox.addEventListener('change', (e) => {
+                    toggleDocument(doc.filename, e.target.checked);
+                    e.stopPropagation();
+                });
+                
+                const info = document.createElement('div');
+                info.className = 'document-info';
+                
+                const title = document.createElement('div');
+                title.className = 'document-title';
+                title.textContent = doc.naslov || doc.filename;
+                
+                const author = document.createElement('div');
+                author.className = 'document-author';
+                
+                // Build citation text
+                let citationParts = [];
+                if (doc.autor) citationParts.push(doc.autor);
+                if (doc.godina) {
+                    if (citationParts.length > 0) {
+                        citationParts[citationParts.length - 1] += ` (${doc.godina})`;
+                    } else {
+                        citationParts.push(`(${doc.godina})`);
+                    }
+                }
+                if (doc.izdavac) citationParts.push(doc.izdavac);
+                
+                author.textContent = citationParts.length > 0 ? citationParts.join('. ') : 'Непознат аутор';
+                
+                info.appendChild(title);
+                info.appendChild(author);
+                
+                itemContent.appendChild(checkbox);
+                itemContent.appendChild(info);
+                div.appendChild(itemContent);
+                
+                // Click on div also toggles checkbox
+                div.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+                
+                documentsList.appendChild(div);
+            });
+            
+            updateSelectedCount();
+        }
+
+        // Toggle document selection
+        function toggleDocument(filename, isSelected) {
+            if (isSelected) {
+                if (!selectedDocuments.includes(filename)) {
+                    selectedDocuments.push(filename);
+                }
+            } else {
+                selectedDocuments = selectedDocuments.filter(f => f !== filename);
+            }
+            
+            updateSelectedCount();
+            updateDocumentItemStyle(filename, isSelected);
+        }
+
+        // Update document item visual style
+        function updateDocumentItemStyle(filename, isSelected) {
+            const index = allDocuments.findIndex(d => d.filename === filename);
+            if (index !== -1) {
+                const div = document.getElementById(`doc-${index}`);
+                if (div) {
+                    if (isSelected) {
+                        div.classList.add('selected');
+                    } else {
+                        div.classList.remove('selected');
+                    }
+                }
+            }
+        }
+
+        // Update selected count display
+        function updateSelectedCount() {
+            const count = selectedDocuments.length;
+            const total = allDocuments.length;
+            
+            if (count === 0) {
+                selectedCount.textContent = `Изабрано: 0 докумената (користи све)`;
+            } else {
+                selectedCount.textContent = `Изабрано: ${count} од ${total} докумената`;
+            }
+        }
+
+        // Select all documents
+        selectAllBtn.addEventListener('click', () => {
+            selectedDocuments = allDocuments.map(d => d.filename);
+            document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = true);
+            document.querySelectorAll('.document-item').forEach(item => item.classList.add('selected'));
+            updateSelectedCount();
+        });
+
+        // Deselect all documents
+        deselectAllBtn.addEventListener('click', () => {
+            selectedDocuments = [];
+            document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.document-item').forEach(item => item.classList.remove('selected'));
+            updateSelectedCount();
+        });
 
         // Handle period selection
         function selectPeriod(period) {
@@ -505,15 +818,22 @@
             addLoadingIndicator();
             
             try {
+                const requestBody = { 
+                    message: message,
+                    period: selectedPeriod
+                };
+                
+                // Add selected documents if any
+                if (selectedDocuments.length > 0) {
+                    requestBody.selected_documents = selectedDocuments;
+                }
+                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
-                        message: message,
-                        period: selectedPeriod
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 const data = await response.json();
@@ -553,6 +873,9 @@
             .catch(error => {
                 console.error('Server not reachable:', error);
             });
+        
+        // Load documents on page load
+        loadDocuments();
     </script>
 </body>
 </html>
