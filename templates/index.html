@@ -157,6 +157,13 @@
             border-bottom-left-radius: 4px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             font-weight: 500;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        /* Format citations in agent messages */
+        .message.agent .message-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .input-container {
@@ -408,14 +415,14 @@
         .documents-list {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 15px;
         }
 
         .document-item {
-            margin-bottom: 12px;
-            padding: 12px;
+            margin-bottom: 10px;
+            padding: 10px;
             border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            border-radius: 8px;
             transition: all 0.2s;
             cursor: pointer;
             background: white;
@@ -448,15 +455,17 @@
         .document-title {
             font-weight: 600;
             color: #333;
-            font-size: 13px;
-            margin-bottom: 4px;
-            line-height: 1.3;
+            font-size: 11px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .document-author {
             font-size: 11px;
             color: #666;
             line-height: 1.4;
+            display: none; /* Hide author since it's included in citation */
         }
         
         .document-item-content {
@@ -636,27 +645,12 @@
                 
                 const title = document.createElement('div');
                 title.className = 'document-title';
-                title.textContent = doc.naslov || doc.filename;
-                
-                const author = document.createElement('div');
-                author.className = 'document-author';
-                
-                // Build citation text
-                let citationParts = [];
-                if (doc.autor) citationParts.push(doc.autor);
-                if (doc.godina) {
-                    if (citationParts.length > 0) {
-                        citationParts[citationParts.length - 1] += ` (${doc.godina})`;
-                    } else {
-                        citationParts.push(`(${doc.godina})`);
-                    }
-                }
-                if (doc.izdavac) citationParts.push(doc.izdavac);
-                
-                author.textContent = citationParts.length > 0 ? citationParts.join('. ') : 'Непознат аутор';
+                // Use formatted citation as the display name
+                title.textContent = doc.citation || doc.display_name || doc.naslov || doc.filename;
+                title.style.fontSize = '12px';
+                title.style.lineHeight = '1.4';
                 
                 info.appendChild(title);
-                info.appendChild(author);
                 
                 itemContent.appendChild(checkbox);
                 itemContent.appendChild(info);
@@ -764,7 +758,15 @@
             
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
+            
+            // For agent messages, preserve formatting and handle citations
+            if (!isUser) {
+                // Preserve line breaks and formatting
+                contentDiv.style.whiteSpace = 'pre-wrap';
+                contentDiv.textContent = content;
+            } else {
+                contentDiv.textContent = content;
+            }
             
             messageDiv.appendChild(contentDiv);
             
