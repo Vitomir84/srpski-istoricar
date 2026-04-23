@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from openai import AsyncOpenAI
+import httpx
 import faiss
 import numpy as np
 import pickle
@@ -106,10 +107,17 @@ else:
 
 # Initialize OpenAI client for embeddings
 try:
+    # Create httpx client with trust_env=False to ignore system proxy settings
+    http_client = httpx.AsyncClient(
+        trust_env=False,  # Don't use environment proxy settings
+        timeout=60.0,
+        limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+    )
+    
     openai_client = AsyncOpenAI(
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,
-        timeout=60.0,  # Default timeout of 60 seconds
+        http_client=http_client,
         max_retries=2  # Retry failed requests up to 2 times
     )
     logger.info(f"✓ OpenAI клијент иницијализован (модел: {MODEL_NAME})")
