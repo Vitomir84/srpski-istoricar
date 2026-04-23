@@ -1,0 +1,43 @@
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 30px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.header p {
+  font-size: 14px;
+  opacity: 0.95;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.header .subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.header .info {
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.6;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.selected-period-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+  margin-top: 10px;
+  font-weight: 600;
+}

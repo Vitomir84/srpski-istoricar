@@ -8,7 +8,7 @@ import json
 import logging
 from datetime import datetime
 from typing import Annotated
-from flask import Flask, render_template, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from openai import AsyncOpenAI
 import faiss
@@ -33,7 +33,15 @@ logger.info("🇷🇸 СРПСКИ ИСТОРИЧАР - покретање ап�
 logger.info("="*70)
 
 app = Flask(__name__, static_folder='pictures', static_url_path='/static')
-CORS(app)
+
+# Configure CORS for React development server
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Configuration
 FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
@@ -460,10 +468,25 @@ async def create_agent_response(user_message: str, period: str = None, selected_
 
 @app.route('/')
 def index():
-    """Serve the main page"""
+    """API root endpoint"""
     client_ip = request.remote_addr
-    logger.info(f"🌐 GET / захтев од {client_ip} - сервирам почетну страницу")
-    return render_template('index.html')
+    logger.info(f"🌐 GET / захтев од {client_ip}")
+    return jsonify({
+        'message': 'Српски историчар API',
+        'version': '2.0',
+        'endpoints': {
+            'chat': '/api/chat',
+            'documents': '/api/documents',
+            'health': '/api/health',
+            'static': '/static/<path:filename>'
+        }
+    })
+
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files (images)"""
+    return send_from_directory(app.static_folder, filename)
 
 
 @app.route('/api/chat', methods=['POST'])

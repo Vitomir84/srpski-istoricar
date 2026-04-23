@@ -1,0 +1,18 @@
+.welcome-message {
+  text-align: center;
+  color: #2a2a2a;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.welcome-message h2 {
+  color: #4a5ab0;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.welcome-message p {
+  font-weight: 500;
+  line-height: 1.6;
+}

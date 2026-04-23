@@ -3,51 +3,90 @@
 A Retrieval-Augmented Generation (RAG) system for Serbian history built with:
 - **FAISS** - Local vector database for document storage and retrieval
 - **OpenAI** - For LLM and embeddings
-- **Flask** - Web backend
+- **Flask** - REST API backend
+- **React** - Modern frontend with asynchronous updates
 - **Poetry** - Dependency management
+
+## 🎉 New: React Frontend!
+
+This application has been **modernized with a React frontend**, providing:
+- ⚡ Asynchronous, real-time updates
+- 🎨 Component-based architecture
+- 🔄 Hot module reloading in development
+- 🚀 Better performance and user experience
+
+**Quick Start:** See [QUICKSTART.md](QUICKSTART.md) for setup instructions.
+
+**Migration Details:** See [REACT_MIGRATION_GUIDE.md](REACT_MIGRATION_GUIDE.md) for architecture details.
 
 ## Features
 
-- 🏛️ Chat interface in Serbian language
+- 🏛️ Chat interface in Serbian language (Cyrillic)
 - 🔍 RAG-based responses using FAISS vector store
 - 📚 PDF document parsing and indexing
 - 💾 Fully local vector storage (no external database needed)
-- 🎨 Beautiful, responsive UI
+- 🎨 Beautiful, responsive React UI
 - 📖 OCR support for scanned documents (via Tesseract)
+- 📑 Document filtering and period-based search
+- 🔗 Citation tracking with bibliography
+
+## Architecture
+
+### Backend (Flask API)
+- **Port**: 5000
+- **Purpose**: REST API for chat, documents, and health endpoints
+- **File**: `app.py`
+
+### Frontend (React SPA)
+- **Dev Port**: 3000
+- **Purpose**: Single-page application with modern UI
+- **Location**: `frontend/` directory
 
 ## Prerequisites
 
-- Python 3.11 or higher
-- Poetry (for dependency management)
+- Python 3.8 or higher
+- Node.js 14 or higher
+- Poetry (optional, for dependency management)
 - OpenAI API key
 - Tesseract OCR (optional, for scanned PDFs)
 
-## Installation
+## Quick Installation
 
-### 1. Clone or Download
+### Using the Setup Script (Recommended)
 
-Download this project to your machine.
+```powershell
+# Setup frontend
+.\setup-frontend.ps1
 
-### 2. Install Poetry
-
-If you don't have Poetry installed:
-
-```bash
-pip install poetry
+# Start both servers
+.\start.ps1
 ```
 
-### 3. Install Dependencies
+### Manual Installation
 
-Using Poetry (recommended):
+**Backend:**
+```
 
+**Backend:**
 ```bash
+# Using pip
+pip install -r requirements.txt
+
+# Or using poetry
 poetry install
 ```
 
-Or using pip:
-
+**Frontend:**
 ```bash
-pip install -r requirements.txt
+cd frontend
+npm install
+cd ..
+```
+
+**Copy Images:**
+```powershell
+Copy-Item pictures\hero-bg.jpg frontend\public\
+Copy-Item pictures\SvetiSavaMileseva.jpg frontend\public\
 ```
 
 ### 4. Install Tesseract OCR (Optional)
@@ -143,19 +182,39 @@ poetry run python add_pdf_to_faiss.py "document.pdf" --period novi_vek --force
 
 ### 3. Start the Application
 
+**Option A: Automated (Both Servers)**
+```powershell
+.\start.ps1
+```
+
+**Option B: Manual (Two Terminals)**
+
+Terminal 1 - Backend:
 ```bash
-poetry run python app.py
+python app.py
+# Or: poetry run python app.py
+```
+
+Terminal 2 - Frontend:
+```bash
+cd frontend
+npm start
 ```
 
 The application will:
-- Load the FAISS index from disk
-- Start the Flask server on http://localhost:5000
+- **Backend**: Load FAISS index and start REST API on http://localhost:5000
+- **Frontend**: Start React dev server and open http://localhost:3000
 
 ### 4. Open the Chat Interface
 
-Open your browser and go to:
+The React frontend will automatically open at:
 ```
-http://localhost:5000
+http://localhost:3000
+```
+
+The Flask API is available at:
+```
+http://localhost:5000/api/
 ```
 
 ### 5. Explore the FAISS Index
