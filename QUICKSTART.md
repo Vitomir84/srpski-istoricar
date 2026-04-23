@@ -1,6 +1,6 @@
-# 🚀 Quick Start Guide - Српски историчар (React Version)
+# 🚀 Quick Start Guide - Српски историчар (React + FastAPI Version)
 
-This guide will help you get the modernized React version of Српски историчар up and running quickly.
+This guide will help you get the modernized React + FastAPI version of Српски историчар up and running quickly.
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ Copy-Item pictures\SvetiSavaMileseva.jpg frontend\public\
 .\start.ps1
 ```
 
-This will start both the Flask backend and React frontend automatically.
+This will start both the FastAPI backend and React frontend automatically.
 
 ### Option B: Manual Start (Two Terminals)
 
@@ -50,6 +50,7 @@ This will start both the Flask backend and React frontend automatically.
 python app.py
 ```
 Backend runs on: http://localhost:5000
+API docs: http://localhost:5000/docs
 
 **Terminal 2 - Frontend:**
 ```powershell
@@ -105,13 +106,16 @@ See `PDF_PARSER_README.md` for details.
 | Missing Node modules | Run `npm install` in frontend directory |
 
 ## What's Different from the Old Version?
-
-| Old (Flask Templates) | New (React) |
+FastAPI + React) |
 |-----------------------|-------------|
 | Single HTML file | Component-based architecture |
 | Vanilla JavaScript | Modern React with hooks |
+| Flask web server | FastAPI async API + React SPA |
 | Server-side rendering | Client-side SPA |
 | Page reloads | Asynchronous updates |
+| Static templates | Dynamic state management |
+| Synchronous endpoints | Native async/await support |
+| No auto-generated docs | Interactive API docs at /docs
 | Static templates | Dynamic state management |
 
 ## Development
@@ -164,7 +168,7 @@ The optimized build will be in `frontend/build/`
 - Check terminal for backend errors
 
 ## File Structure Overview
-
+astAPI backend ⚡
 ```
 srpski-istoricar/
 ├── app.py                 # Flask API backend ⚙️

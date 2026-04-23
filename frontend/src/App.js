@@ -7,6 +7,7 @@ import InputContainer from './components/InputContainer';
 import DocumentsPanel from './components/DocumentsPanel';
 import PeriodSelection from './components/PeriodSelection';
 import WelcomeMessage from './components/WelcomeMessage';
+import heroBgImage from './assets/hero-bg.jpg';
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -113,7 +114,13 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{
+      backgroundImage: `url(${heroBgImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed'
+    }}>
       <div className="container">
         <div className="main-chat-area">
           <Header 

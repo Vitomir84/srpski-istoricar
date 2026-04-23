@@ -8,8 +8,9 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-flask = "^3.0.0"
-flask-cors = "^4.0.0"
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.3"
 openai = ">=2.8.0"
 faiss-cpu = "^1.7.4"
 numpy = "^1.24.0"

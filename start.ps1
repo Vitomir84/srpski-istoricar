@@ -65,16 +65,17 @@ Write-Host "   Starting Application" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
-Write-Host "Backend (Flask): http://localhost:5000" -ForegroundColor Cyan
+Write-Host "Backend (FastAPI): http://localhost:5000" -ForegroundColor Cyan
+Write-Host "Backend API Docs: http://localhost:5000/docs" -ForegroundColor Cyan
 Write-Host "Frontend (React): http://localhost:3000" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Starting Flask backend..." -ForegroundColor Yellow
+Write-Host "Starting FastAPI backend..." -ForegroundColor Yellow
 Write-Host "Starting React frontend..." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow
 Write-Host ""
 
-# Start Flask backend in background
+# Start FastAPI backend in background
 $backendJob = Start-Job -ScriptBlock {
     Set-Location $using:PWD
     python app.py

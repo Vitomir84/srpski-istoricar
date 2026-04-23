@@ -7,9 +7,12 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Annotated
-from flask import Flask, request, jsonify, Response, send_from_directory
-from flask_cors import CORS
+from typing import Optional, List
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse
+from pydantic import BaseModel
 from openai import AsyncOpenAI
 import faiss
 import numpy as np
@@ -32,16 +35,42 @@ logger.info("="*70)
 logger.info("🇷🇸 СРПСКИ ИСТОРИЧАР - покретање апликације...")
 logger.info("="*70)
 
-app = Flask(__name__, static_folder='pictures', static_url_path='/static')
+# Create FastAPI app
+app = FastAPI(
+    title="Српски историчар API",
+    description="RAG Chat Agent for Serbian History",
+    version="2.0"
+)
 
 # Configure CORS for React development server
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files
+if Path("pictures").exists():
+    app.mount("/static", StaticFiles(directory="pictures"), name="static")
+
+# Pydantic models for request/response
+class ChatRequest(BaseModel):
+    message: str
+    period: Optional[str] = None
+    selected_documents: Optional[List[str]] = None
+
+class ChatResponse(BaseModel):
+    response: str
+
+class HealthResponse(BaseModel):
+    status: str
+    faiss_available: bool
+    faiss_index_path: str
+    vectors_count: int
+    collection: str
+    mode: str
 
 # Configuration
 FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
@@ -466,68 +495,58 @@ async def create_agent_response(user_message: str, period: str = None, selected_
         return f"Извините, дошло је до неочекиване грешке: {str(e)}"
 
 
-@app.route('/')
-def index():
+@app.get("/")
+async def index():
     """API root endpoint"""
-    client_ip = request.remote_addr
-    logger.info(f"🌐 GET / захтев од {client_ip}")
-    return jsonify({
+    logger.info(f"🌐 GET / захтев")
+    return {
         'message': 'Српски историчар API',
         'version': '2.0',
+        'framework': 'FastAPI',
         'endpoints': {
             'chat': '/api/chat',
             'documents': '/api/documents',
             'health': '/api/health',
-            'static': '/static/<path:filename>'
+            'static': '/static/{filename}',
+            'docs': '/docs'
         }
-    })
+    }
 
 
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    """Serve static files (images)"""
-    return send_from_directory(app.static_folder, filename)
-
-
-@app.route('/api/chat', methods=['POST'])
-def chat():
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
     """Handle chat messages"""
     try:
-        data = request.json
-        user_message = data.get('message', '')
-        period = data.get('period', None)
-        selected_documents = data.get('selected_documents', None)
+        logger.info(f"\n🌐 API /chat захтев")
         
-        # Log incoming request
-        client_ip = request.remote_addr
-        logger.info(f"\n🌐 API /chat захтев од {client_ip}")
+        if not request.message:
+            logger.warning(f"   ⚠️  Празна порука")
+            raise HTTPException(status_code=400, detail="Message is required")
         
-        if not user_message:
-            logger.warning(f"   ⚠️  Празна порука од {client_ip}")
-            return jsonify({'error': 'Message is required'}), 400
+        # Call async function directly (no need for event loop management in FastAPI)
+        response = await create_agent_response(
+            request.message, 
+            request.period, 
+            request.selected_documents
+        )
         
-        # Run async function in event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(create_agent_response(user_message, period, selected_documents))
-        loop.close()
-        
-        logger.info(f"✓ Одговор послат кориснику {client_ip}\n")
-        return jsonify({'response': response})
+        logger.info(f"✓ Одговор послат кориснику\n")
+        return ChatResponse(response=response)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"✗ Грешка у /api/chat endpoint-у: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.route('/api/documents', methods=['GET'])
-def get_documents():
+@app.get("/api/documents")
+async def get_documents():
     """Get list of all unique documents in the database"""
-    client_ip = request.remote_addr
-    logger.info(f"🌐 API /documents захтев од {client_ip}")
+    logger.info(f"🌐 API /documents захтев")
     try:
         if not FAISS_AVAILABLE or not faiss_metadata:
             logger.warning("   ⚠️  FAISS није доступан, враћам празну листу")
-            return jsonify({'documents': []})
+            return {'documents': []}
         
         # Extract unique documents with their metadata
         documents_dict = {}
@@ -559,34 +578,35 @@ def get_documents():
                                key=lambda x: x.get('citation', x['filename']))
         
         logger.info(f"   ✓ Враћам листу од {len(documents_list)} докумената")
-        return jsonify({'documents': documents_list})
+        return {'documents': documents_list}
     except Exception as e:
         logger.error(f"✗ Грешка у /api/documents endpoint-у: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.route('/api/health', methods=['GET'])
-def health():
+@app.get("/api/health", response_model=HealthResponse)
+async def health():
     """Health check endpoint"""
-    client_ip = request.remote_addr
-    logger.info(f"🌐 API /health захтев од {client_ip}")
+    logger.info(f"🌐 API /health захтев")
     
-    health_info = {
-        'status': 'ok',
-        'faiss_available': FAISS_AVAILABLE,
-        'faiss_index_path': FAISS_INDEX_PATH,
-        'vectors_count': faiss_index.ntotal if faiss_index else 0,
-        'collection': COLLECTION_NAME,
-        'mode': 'RAG' if FAISS_AVAILABLE else 'FALLBACK (no RAG)'
-    }
+    health_info = HealthResponse(
+        status='ok',
+        faiss_available=FAISS_AVAILABLE,
+        faiss_index_path=FAISS_INDEX_PATH,
+        vectors_count=faiss_index.ntotal if faiss_index else 0,
+        collection=COLLECTION_NAME,
+        mode='RAG' if FAISS_AVAILABLE else 'FALLBACK (no RAG)'
+    )
     
-    logger.info(f"   ✓ Health check: {health_info['mode']}, {health_info['vectors_count']} вектора")
-    return jsonify(health_info)
+    logger.info(f"   ✓ Health check: {health_info.mode}, {health_info.vectors_count} вектора")
+    return health_info
 
 
 if __name__ == '__main__':
+    import uvicorn
+    
     logger.info("\n" + "="*70)
-    logger.info("🇷🇸 СРПСКИ ИСТОРИЧАР - Покретање Flask сервера")
+    logger.info("🇷🇸 СРПСКИ ИСТОРИЧАР - Покретање FastAPI сервера")
     logger.info("="*70)
     
     # Show status
@@ -605,5 +625,7 @@ if __name__ == '__main__':
         logger.warning("Покрените: python populate_database.py")
         logger.warning("="*70)
     
-    logger.info("\n🚀 Покретам Flask сервер на http://0.0.0.0:5000\n")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    logger.info("\n🚀 Покретам FastAPI сервер на http://0.0.0.0:5000")
+    logger.info("📚 API документација доступна на: http://0.0.0.0:5000/docs\n")
+    
+    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")

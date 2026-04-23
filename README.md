@@ -3,17 +3,19 @@
 A Retrieval-Augmented Generation (RAG) system for Serbian history built with:
 - **FAISS** - Local vector database for document storage and retrieval
 - **OpenAI** - For LLM and embeddings
-- **Flask** - REST API backend
+- **FastAPI** - Modern async REST API backend
 - **React** - Modern frontend with asynchronous updates
 - **Poetry** - Dependency management
 
-## 🎉 New: React Frontend!
+## 🎉 New: React + FastAPI Stack!
 
-This application has been **modernized with a React frontend**, providing:
-- ⚡ Asynchronous, real-time updates
-- 🎨 Component-based architecture
+This application has been **modernized with a React frontend and FastAPI backend**, providing:
+- ⚡ Native async/await support with FastAPI
+- 🚀 Better performance and asynchronous request handling
+- 📚 Auto-generated interactive API documentation
+- 🎨 Component-based React architecture
 - 🔄 Hot module reloading in development
-- 🚀 Better performance and user experience
+- 💪 Type safety with Pydantic models
 
 **Quick Start:** See [QUICKSTART.md](QUICKSTART.md) for setup instructions.
 
@@ -32,10 +34,11 @@ This application has been **modernized with a React frontend**, providing:
 
 ## Architecture
 
-### Backend (Flask API)
+### Backend (FastAPI)
 - **Port**: 5000
-- **Purpose**: REST API for chat, documents, and health endpoints
+- **Purpose**: Async REST API for chat, documents, and health endpoints
 - **File**: `app.py`
+- **Docs**: Auto-generated at `/docs` (Swagger UI) and `/redoc` (ReDoc)
 
 ### Frontend (React SPA)
 - **Dev Port**: 3000
@@ -201,8 +204,7 @@ cd frontend
 npm start
 ```
 
-The application will:
-- **Backend**: Load FAISS index and start REST API on http://localhost:5000
+The application will:FastAPI server on http://localhost:5000
 - **Frontend**: Start React dev server and open http://localhost:3000
 
 ### 4. Open the Chat Interface
@@ -212,9 +214,10 @@ The React frontend will automatically open at:
 http://localhost:3000
 ```
 
-The Flask API is available at:
-```
-http://localhost:5000/api/
+The FastAPI backend provides:
+- API endpoints at: http://localhost:5000/api/
+- Interactive docs at: http://localhost:5000/docs
+- Alternative docs at: http://localhost:5000/redocp://localhost:5000/api/
 ```
 
 ### 5. Explore the FAISS Index
