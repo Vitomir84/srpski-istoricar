@@ -31,6 +31,19 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
+
+# Fix proxy issue - remove problematic proxy settings that cause "Invalid port: ':*'" error
+# This is needed because system-level proxy settings with wildcards confuse httpx
+if 'no_proxy' in os.environ:
+    logger.warning(f"⚠️  Уклањам проблематичну no_proxy променљиву: {os.environ.get('no_proxy', '')[:50]}...")
+    del os.environ['no_proxy']
+if 'http_proxy' in os.environ:
+    logger.warning(f"⚠️  Уклањам http_proxy променљиву за локални развој")
+    del os.environ['http_proxy']
+if 'https_proxy' in os.environ:
+    logger.warning(f"⚠️  Уклањам https_proxy променљиву за локални развој")
+    del os.environ['https_proxy']
+
 logger.info("="*70)
 logger.info("🇷🇸 СРПСКИ ИСТОРИЧАР - покретање апликације...")
 logger.info("="*70)
