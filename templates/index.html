@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Српски историчар</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,7 +15,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Crimson Text', serif;
             background-image: url('/static/hero-bg.jpg');
             background-size: cover;
             background-position: center;
@@ -33,22 +36,57 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.55);
             z-index: 0;
+        }
+        
+        /* Subtle animated overlay with Byzantine crosses */
+        .particle-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            color: #C9A84C;
+            opacity: 0.1;
+            font-size: 20px;
+            animation: float 15s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.08;
+            }
+            50% {
+                transform: translateY(-30px) rotate(180deg);
+                opacity: 0.12;
+            }
         }
 
         .container {
             width: 90%;
             max-width: 1400px;
             height: 90vh;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: rgba(15, 10, 8, 0.75);
+            border: 1px solid rgba(201, 168, 76, 0.3);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 
+                        0 0 80px rgba(201, 168, 76, 0.15);
             display: flex;
             flex-direction: row;
             overflow: hidden;
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .main-chat-area {
@@ -59,46 +97,66 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
+            background: linear-gradient(135deg, #8B1A1A 0%, #6B0F0F 100%);
+            color: #F5E6C8;
+            padding: 25px 30px;
             text-align: center;
+            border-top: 3px solid #C9A84C;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+            position: relative;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #C9A84C, transparent);
         }
 
         .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #E8C97A;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
         }
 
         .header p {
-            font-size: 14px;
+            font-size: 15px;
             opacity: 0.95;
             margin-bottom: 8px;
-            line-height: 1.5;
+            line-height: 1.6;
+            color: #F5E6C8;
         }
 
         .header .subtitle {
-            font-size: 16px;
-            font-weight: 500;
+            font-size: 17px;
+            font-weight: 600;
             margin-bottom: 12px;
+            font-style: italic;
+            color: #E8D5A3;
         }
 
         .header .info {
-            font-size: 12px;
+            font-size: 13px;
             opacity: 0.85;
             line-height: 1.6;
             max-width: 700px;
             margin: 0 auto;
+            color: #F5E6C8;
         }
 
         .chat-container {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            background-image: url('/static/SvetiSavaMileseva.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background: rgba(20, 15, 12, 0.4);
             position: relative;
         }
         
@@ -109,8 +167,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.70);
+            background: rgba(10, 8, 6, 0.3);
             z-index: 0;
+            pointer-events: none;
         }
 
         .message {
@@ -144,21 +203,22 @@
         }
 
         .message.user .message-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #8B1A1A 0%, #6B0F0F 100%);
+            color: #F5E6C8;
             border-bottom-right-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(201, 168, 76, 0.2);
+            border: 1px solid rgba(201, 168, 76, 0.3);
         }
 
         .message.agent .message-content {
-            background: rgba(255, 255, 255, 0.95);
-            color: #1a1a1a;
-            border: 1px solid #e0e0e0;
+            background: rgba(245, 230, 200, 0.95);
+            color: #2a1810;
+            border: 1px solid rgba(201, 168, 76, 0.4);
             border-bottom-left-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             font-weight: 500;
             white-space: pre-wrap;
-            line-height: 1.6;
+            line-height: 1.7;
         }
         
         /* Format citations in agent messages */
@@ -168,41 +228,54 @@
 
         .input-container {
             padding: 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
+            background: rgba(15, 10, 8, 0.9);
+            border-top: 1px solid rgba(201, 168, 76, 0.3);
             display: flex;
             gap: 10px;
         }
 
         #userInput {
             flex: 1;
-            padding: 12px 18px;
-            border: 2px solid #e0e0e0;
+            padding: 14px 20px;
+            border: 2px solid rgba(201, 168, 76, 0.3);
+            background: rgba(30, 25, 20, 0.6);
+            color: #F5E6C8;
             border-radius: 25px;
             font-size: 15px;
+            font-family: 'Crimson Text', serif;
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+        }
+        
+        #userInput::placeholder {
+            color: rgba(245, 230, 200, 0.5);
         }
 
         #userInput:focus {
-            border-color: #667eea;
+            border-color: #C9A84C;
+            background: rgba(30, 25, 20, 0.8);
+            box-shadow: 0 0 15px rgba(201, 168, 76, 0.3);
         }
 
         #sendBtn {
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 14px 35px;
+            background: linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%);
+            color: #2a1810;
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
         }
 
         #sendBtn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(201, 168, 76, 0.5);
+            background: linear-gradient(135deg, #E8C97A 0%, #C9A84C 100%);
         }
 
         #sendBtn:active {
@@ -210,7 +283,7 @@
         }
 
         #sendBtn:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
@@ -224,7 +297,7 @@
         .loading-dot {
             width: 8px;
             height: 8px;
-            background: #667eea;
+            background: #C9A84C;
             border-radius: 50%;
             animation: bounce 1.4s infinite ease-in-out both;
         }
@@ -248,21 +321,25 @@
 
         .welcome-message {
             text-align: center;
-            color: #2a2a2a;
+            color: #F5E6C8;
             padding: 40px 20px;
             position: relative;
             z-index: 1;
         }
 
         .welcome-message h2 {
-            color: #4a5ab0;
-            margin-bottom: 10px;
-            font-weight: 600;
+            font-family: 'Cinzel', serif;
+            color: #E8C97A;
+            margin-bottom: 15px;
+            font-weight: 700;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         
         .welcome-message p {
             font-weight: 500;
-            line-height: 1.6;
+            line-height: 1.8;
+            color: #F5E6C8;
         }
 
         .scroll-to-bottom {
@@ -289,65 +366,106 @@
         }
 
         .period-selection h2 {
-            color: #4a5ab0;
+            font-family: 'Cinzel', serif;
+            color: #E8C97A;
             margin-bottom: 20px;
-            font-weight: 600;
-            font-size: 24px;
+            font-weight: 700;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .period-selection p {
             font-weight: 500;
             margin-bottom: 30px;
-            color: #2a2a2a;
-            line-height: 1.6;
+            color: #F5E6C8;
+            line-height: 1.8;
+            font-size: 16px;
         }
 
         .period-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            max-width: 750px;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 20px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .period-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 15px;
-            padding: 25px 20px;
+            background: linear-gradient(135deg, #8B1A1A 0%, #6B0F0F 100%);
+            border: 2px solid #C9A84C;
+            border-radius: 12px;
+            padding: 28px 20px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 
+                        inset 0 1px 0 rgba(201, 168, 76, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .period-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(201, 168, 76, 0.1) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        
+        .period-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #C9A84C, transparent);
         }
 
         .period-card:hover {
             transform: translateY(-5px);
-            border-color: #667eea;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            border-color: #E8C97A;
+            box-shadow: 0 8px 25px rgba(201, 168, 76, 0.5), 
+                        inset 0 1px 0 rgba(201, 168, 76, 0.4),
+                        0 0 30px rgba(201, 168, 76, 0.3);
+            background: linear-gradient(135deg, #9B2A2A 0%, #7B1F1F 100%);
         }
 
         .period-card h3 {
-            color: #667eea;
-            margin-bottom: 10px;
+            font-family: 'Cinzel', serif;
+            color: #E8C97A;
+            margin-bottom: 12px;
             font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
         }
 
         .period-card p {
-            color: #666;
-            font-size: 13px;
+            color: #F5E6C8;
+            font-size: 14px;
             margin: 0;
             font-weight: 400;
+            position: relative;
+            z-index: 1;
         }
 
         .selected-period-badge {
             display: inline-block;
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            padding: 6px 15px;
+            background: rgba(201, 168, 76, 0.2);
+            color: #E8C97A;
+            padding: 8px 18px;
             border-radius: 20px;
-            font-size: 13px;
-            margin-top: 10px;
+            border: 1px solid rgba(201, 168, 76, 0.4);
+            font-size: 14px;
+            margin-top: 12px;
             font-weight: 600;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.5px;
         }
 
         .hidden {
@@ -362,8 +480,8 @@
         .documents-panel {
             width: 380px;
             height: 100%;
-            background: #f8f9fa;
-            border-left: 1px solid #e0e0e0;
+            background: rgba(20, 15, 12, 0.85);
+            border-left: 1px solid rgba(201, 168, 76, 0.3);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
@@ -374,14 +492,30 @@
         }
 
         .documents-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #8B1A1A 0%, #6B0F0F 100%);
+            color: #F5E6C8;
             padding: 20px;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+            position: relative;
+        }
+        
+        .documents-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #C9A84C, transparent);
         }
 
         .documents-header h3 {
             margin: 0;
-            font-size: 18px;
+            font-size: 20px;
+            font-family: 'Cinzel', serif;
+            color: #E8C97A;
+            letter-spacing: 0.5px;
         }
 
         .close-panel {
@@ -390,53 +524,59 @@
 
         .documents-controls {
             padding: 15px 20px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.2);
             display: flex;
             gap: 10px;
         }
 
         .control-btn {
-            padding: 8px 16px;
-            border: 1px solid #667eea;
-            background: white;
-            color: #667eea;
+            padding: 10px 18px;
+            border: 1px solid #C9A84C;
+            background: rgba(201, 168, 76, 0.1);
+            color: #E8C97A;
             border-radius: 15px;
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.3px;
             transition: all 0.2s;
         }
 
         .control-btn:hover {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%);
+            color: #2a1810;
+            box-shadow: 0 2px 8px rgba(201, 168, 76, 0.4);
         }
 
         .documents-list {
             flex: 1;
             overflow-y: auto;
             padding: 15px;
+            background: rgba(10, 8, 6, 0.3);
         }
 
         .document-item {
             margin-bottom: 10px;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
+            padding: 12px;
+            border: 2px solid rgba(201, 168, 76, 0.25);
+            background: rgba(30, 25, 20, 0.5);
             border-radius: 8px;
             transition: all 0.2s;
             cursor: pointer;
-            background: white;
         }
 
         .document-item:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-            transform: translateX(-2px);
+            border-color: #C9A84C;
+            background: rgba(139, 26, 26, 0.3);
+            transform: translateX(-3px);
+            box-shadow: 0 2px 8px rgba(201, 168, 76, 0.3);
         }
 
         .document-item.selected {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-color: #E8C97A;
+            background: rgba(139, 26, 26, 0.4);
+            box-shadow: 0 0 12px rgba(201, 168, 76, 0.4);
         }
 
         .document-checkbox {
@@ -445,6 +585,7 @@
             width: 16px;
             height: 16px;
             flex-shrink: 0;
+            accent-color: #C9A84C;
         }
 
         .document-info {
@@ -454,16 +595,16 @@
 
         .document-title {
             font-weight: 600;
-            color: #333;
-            font-size: 11px;
-            line-height: 1.4;
+            color: #F5E6C8;
+            font-size: 12px;
+            line-height: 1.5;
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
 
         .document-author {
             font-size: 11px;
-            color: #666;
+            color: #E8D5A3;
             line-height: 1.4;
             display: none; /* Hide author since it's included in citation */
         }
@@ -475,17 +616,233 @@
         }
 
         .selected-count {
-            padding: 10px 20px;
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            font-size: 13px;
+            padding: 12px 20px;
+            background: rgba(139, 26, 26, 0.6);
+            color: #E8C97A;
+            font-size: 14px;
             font-weight: 600;
             text-align: center;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid rgba(201, 168, 76, 0.3);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.3px;
+        }
+        
+        /* Donation Card Styles */
+        .donation-wrapper {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+        
+        .donation-tab {
+            background: linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%);
+            color: #2a1810;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(201, 168, 76, 0.5), 0 0 30px rgba(201, 168, 76, 0.3);
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            border: 2px solid #8B1A1A;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .donation-tab:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(201, 168, 76, 0.7), 0 0 40px rgba(201, 168, 76, 0.4);
+        }
+        
+        .donation-tab .heart-icon {
+            font-size: 20px;
+            animation: heartbeat 1.5s infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            10%, 30% { transform: scale(1.1); }
+            20%, 40% { transform: scale(1); }
+        }
+        
+        .donation-card {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 420px;
+            background: linear-gradient(135deg, #8B1A1A 0%, #6B0F0F 100%);
+            border: 3px solid #C9A84C;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 
+                        0 0 60px rgba(201, 168, 76, 0.4),
+                        inset 0 2px 0 rgba(201, 168, 76, 0.3);
+            padding: 28px;
+            transform-origin: bottom right;
+            animation: expandCard 0.3s ease-out;
+            display: none;
+        }
+        
+        .donation-card.active {
+            display: block;
+        }
+        
+        @keyframes expandCard {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .donation-card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 18px;
+            border-bottom: 2px solid rgba(201, 168, 76, 0.3);
+            padding-bottom: 16px;
+        }
+        
+        .donation-icon {
+            font-size: 32px;
+            color: #E8C97A;
+            text-shadow: 0 2px 8px rgba(232, 201, 122, 0.5);
+        }
+        
+        .donation-card-header h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #E8C97A;
+            margin: 0;
+            letter-spacing: 0.5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .close-donation {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #E8C97A;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .close-donation:hover {
+            background: rgba(201, 168, 76, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .donation-message {
+            color: #F5E6C8;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        
+        .donation-message strong {
+            color: #E8C97A;
+        }
+        
+        .donation-account {
+            background: rgba(30, 25, 20, 0.7);
+            border: 2px solid rgba(201, 168, 76, 0.4);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .donation-account-label {
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            color: #E8D5A3;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .donation-account-number {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #E8C97A;
+            background: rgba(10, 8, 6, 0.5);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            user-select: all;
+            border: 1px solid rgba(201, 168, 76, 0.2);
+        }
+        
+        .copy-button {
+            width: 100%;
+            padding: 12px;
+            background: rgba(30, 25, 20, 0.8);
+            border: 2px solid #C9A84C;
+            color: #E8C97A;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        
+        .copy-button:hover {
+            background: linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%);
+            color: #2a1810;
+            box-shadow: 0 4px 12px rgba(201, 168, 76, 0.4);
+        }
+        
+        .copy-button.copied {
+            background: #2d5016;
+            border-color: #4a7c1e;
+            color: #a8e063;
+        }
+        
+        .donation-author {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(201, 168, 76, 0.2);
+            font-size: 12px;
+            color: #E8D5A3;
+            text-align: center;
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
+    <!-- Subtle animated particle overlay -->
+    <div class="particle-overlay">
+        <div class="particle" style="left: 10%; top: 15%; animation-delay: 0s;">✦</div>
+        <div class="particle" style="left: 85%; top: 25%; animation-delay: 2s;">✦</div>
+        <div class="particle" style="left: 25%; top: 65%; animation-delay: 4s;">✦</div>
+        <div class="particle" style="left: 70%; top: 75%; animation-delay: 6s;">✦</div>
+        <div class="particle" style="left: 45%; top: 35%; animation-delay: 8s;">✦</div>
+        <div class="particle" style="left: 60%; top: 55%; animation-delay: 10s;">✦</div>
+        <div class="particle" style="left: 15%; top: 85%; animation-delay: 3s;">✦</div>
+        <div class="particle" style="left: 90%; top: 60%; animation-delay: 7s;">✦</div>
+    </div>
+    
     <div class="container">
         <!-- Main Chat Area -->
         <div class="main-chat-area">
@@ -549,6 +906,7 @@
         <!-- Documents Panel -->
         <div class="documents-panel" id="documentsPanel">
             <div class="documents-header">
+                <img src="/static/SvetiSavaMileseva.jpg" alt="Свети Сава" style="width: 150px; height: auto; border: 3px solid #C9A84C; border-radius: 4px; display: block; margin: 0 auto 15px auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
                 <h3>📚 Документи</h3>
             </div>
             <div class="documents-controls">
@@ -560,6 +918,34 @@
             </div>
             <div class="selected-count" id="selectedCount">
                 Изабрано: 0 докумената
+            </div>
+        </div>
+    </div>
+    
+    <!-- Donation Component -->
+    <div class="donation-wrapper" id="donationWrapper">
+        <div class="donation-tab" id="donationTab">
+            <span class="heart-icon">♥</span>
+            <span>Донирај</span>
+        </div>
+        <div class="donation-card" id="donationCard">
+            <div class="donation-card-header">
+                <div class="donation-icon">🕯</div>
+                <h3>Подржите пројекат</h3>
+                <button class="close-donation" id="closeDonation">×</button>
+            </div>
+            <div class="donation-message">
+                <p style="margin-bottom: 8px;"><strong>Помозите очувању српске историје</strong></p>
+                <p style="margin-bottom: 8px; font-size: 13px;">Овај пројекат је настао из љубави према српској историји и култури.</p>
+                <p style="font-size: 13px; margin: 0;">Свака донација помаже да база знања расте.</p>
+            </div>
+            <div class="donation-account">
+                <div class="donation-account-label">Број рачуна за донације</div>
+                <div class="donation-account-number" id="accountNumber">105000040532604232</div>
+                <button class="copy-button" id="copyButton">Копирај број рачуна</button>
+            </div>
+            <div class="donation-author">
+                Аутор: Витомир Јовановић
             </div>
         </div>
     </div>
@@ -878,6 +1264,66 @@
         
         // Load documents on page load
         loadDocuments();
+        
+        // Donation card functionality
+        const donationTab = document.getElementById('donationTab');
+        const donationCard = document.getElementById('donationCard');
+        const closeDonation = document.getElementById('closeDonation');
+        const copyButton = document.getElementById('copyButton');
+        const accountNumber = document.getElementById('accountNumber');
+        
+        let donationCardOpen = false;
+        
+        donationTab.addEventListener('click', () => {
+            if (!donationCardOpen) {
+                donationTab.style.display = 'none';
+                donationCard.classList.add('active');
+                donationCardOpen = true;
+            }
+        });
+        
+        closeDonation.addEventListener('click', () => {
+            donationCard.classList.remove('active');
+            setTimeout(() => {
+                donationTab.style.display = 'flex';
+                donationCardOpen = false;
+            }, 300);
+        });
+        
+        copyButton.addEventListener('click', async () => {
+            const accountNum = '105000040532604232';
+            
+            try {
+                await navigator.clipboard.writeText(accountNum);
+                copyButton.textContent = '✓ Копирано!';
+                copyButton.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyButton.textContent = 'Копирај број рачуна';
+                    copyButton.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = accountNum;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyButton.textContent = '✓ Копирано!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = 'Копирај број рачуна';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        });
     </script>
 </body>
 </html>

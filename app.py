@@ -8,10 +8,11 @@ import json
 import logging
 from datetime import datetime
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 import httpx
@@ -66,8 +67,11 @@ app.add_middleware(
 )
 
 # Mount static files
-if Path("pictures").exists():
-    app.mount("/static", StaticFiles(directory="pictures"), name="static")
+if Path("static").exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Setup Jinja2 templates
+templates = Jinja2Templates(directory="templates")
 
 # Pydantic models for request/response
 class ChatRequest(BaseModel):
@@ -516,10 +520,16 @@ async def create_agent_response(user_message: str, period: str = None, selected_
         return f"Извините, дошло је до неочекиване грешке: {str(e)}"
 
 
-@app.get("/")
-async def index():
-    """API root endpoint"""
-    logger.info(f"🌐 GET / захтев")
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    """Serve the main application interface"""
+    logger.info(f"🌐 GET / захтев - служи HTML интерфејс")
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint"""
+    logger.info(f"🌐 GET /api захтев")
     return {
         'message': 'Српски историчар API',
         'version': '2.0',

@@ -12,7 +12,7 @@ const periodNames = {
 function Header({ selectedPeriod, periodSelected }) {
   return (
     <div className="header">
-      <h1>🇷🇸 Српски историчар 🇷🇸</h1>
+      <h1>Српски историчар</h1>
       <p className="subtitle">Ваш дигитални водич кроз српску историју</p>
       <p>Постављајте питања о историјским документима, личностима и догађајима из српске историје</p>
       <p className="info">

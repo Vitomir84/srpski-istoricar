@@ -1,15 +1,17 @@
 .loading {
   display: flex;
-  gap: 5px;
-  padding: 12px 18px;
+  gap: 8px;
+  padding: 14px 20px;
+  align-items: center;
 }
 
 .loading-dot {
-  width: 8px;
-  height: 8px;
-  background: #667eea;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #8b0000, #c41e3a);
   border-radius: 50%;
-  animation: bounce 1.4s infinite ease-in-out both;
+  animation: bounceFade 1.4s infinite ease-in-out both;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.4);
 }
 
 .loading-dot:nth-child(1) {
@@ -18,13 +20,20 @@
 
 .loading-dot:nth-child(2) {
   animation-delay: -0.16s;
+  background: linear-gradient(135deg, #c41e3a, #d4af37);
 }
 
-@keyframes bounce {
+.loading-dot:nth-child(3) {
+  background: linear-gradient(135deg, #d4af37, #8b0000);
+}
+
+@keyframes bounceFade {
   0%, 80%, 100% {
     transform: scale(0);
+    opacity: 0.5;
   }
   40% {
-    transform: scale(1);
+    transform: scale(1.2);
+    opacity: 1;
   }
 }

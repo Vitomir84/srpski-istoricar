@@ -1,25 +1,29 @@
 .chat-container {
   flex: 1;
-  padding: 20px;
+  padding: 20px 24px;
   overflow-y: auto;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: transparent;
   position: relative;
-}
-
-.chat-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.70);
-  z-index: 0;
 }
 
 .chat-container > * {
   position: relative;
   z-index: 1;
+}
+
+.chat-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: rgba(201, 168, 76, 0.04);
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.22);
+  border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 168, 76, 0.4);
 }

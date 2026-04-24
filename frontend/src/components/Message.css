@@ -1,19 +1,19 @@
 .message {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
   display: flex;
-  animation: fadeIn 0.3s ease-in;
+  animation: messageSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   z-index: 1;
 }
 
-@keyframes fadeIn {
+@keyframes messageSlideIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -23,25 +23,49 @@
 
 .message-content {
   max-width: 70%;
-  padding: 12px 18px;
-  border-radius: 18px;
+  padding: 14px 20px;
+  border-radius: 20px;
   word-wrap: break-word;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.message-content:hover {
+  transform: translateY(-2px);
 }
 
 .message.user .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8b0000 0%, #c41e3a 50%, #d4af37 100%);
+  background-size: 200% 100%;
+  background-position: 0% 0%;
   color: white;
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 4px 15px rgba(139, 0, 0, 0.4),
+              0 2px 5px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+.message.user .message-content:hover {
+  background-position: 100% 0%;
+  box-shadow: 0 6px 20px rgba(196, 30, 58, 0.5),
+              0 3px 8px rgba(0, 0, 0, 0.25);
 }
 
 .message.agent .message-content {
-  background: rgba(255, 255, 255, 0.95);
-  color: #1a1a1a;
-  border: 1px solid #e0e0e0;
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(245, 230, 195, 0.93);
+  color: #2a1810;
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   font-weight: 500;
   white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.7;
+}
+
+.message.agent .message-content:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3),
+              0 4px 12px rgba(196, 30, 58, 0.2);
+  border-color: rgba(196, 30, 58, 0.5);
 }

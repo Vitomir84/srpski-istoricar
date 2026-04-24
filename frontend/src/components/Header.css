@@ -1,43 +1,67 @@
 .header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px 30px;
+  color: #F0D88A;
+  padding: 22px 28px 18px;
   text-align: center;
+  position: relative;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+  flex-shrink: 0;
 }
 
 .header h1 {
+  font-family: 'Cinzel', Georgia, serif;
   font-size: 28px;
-  margin-bottom: 10px;
+  font-weight: 600;
+  color: #F0D88A;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1;
 }
 
 .header p {
+  color: #C4A882;
   font-size: 14px;
-  opacity: 0.95;
   margin-bottom: 8px;
   line-height: 1.5;
+  position: relative;
+  z-index: 1;
 }
 
 .header .subtitle {
+  font-style: italic;
+  color: #C4A882;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
   margin-bottom: 12px;
 }
 
 .header .info {
-  font-size: 12px;
-  opacity: 0.85;
-  line-height: 1.6;
+  background: rgba(201, 168, 76, 0.08);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: #B8976A;
+  font-size: 13px;
   max-width: 700px;
   margin: 0 auto;
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 
 .selected-period-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 6px 15px;
+  background: rgba(139, 26, 26, 0.5);
+  color: #E8C97A;
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 13px;
   margin-top: 10px;
   font-weight: 600;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  font-family: 'Cinzel', Georgia, serif;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 1;
 }

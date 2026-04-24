@@ -7,7 +7,8 @@ import InputContainer from './components/InputContainer';
 import DocumentsPanel from './components/DocumentsPanel';
 import PeriodSelection from './components/PeriodSelection';
 import WelcomeMessage from './components/WelcomeMessage';
-import heroBgImage from './assets/hero-bg.jpg';
+import DonationCard from './components/DonationCard';
+import SvetiSavaShowcase from './components/SvetiSavaShowcase';
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -57,7 +58,6 @@ function App() {
   const handlePeriodSelect = (period) => {
     setSelectedPeriod(period === 'svi' ? null : period);
     setPeriodSelected(true);
-    setShowPeriodSelection(false);
     setShowWelcome(true);
   };
 
@@ -114,20 +114,13 @@ function App() {
   };
 
   return (
-    <div className="app-container" style={{
-      backgroundImage: `url(${heroBgImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      backgroundAttachment: 'fixed'
-    }}>
+    <div className="app-container">
       <div className="container">
-        <div className="main-chat-area">
+        <div className={`main-chat-area${periodSelected ? ' period-unlocked' : ''}`}>
           <Header 
             selectedPeriod={selectedPeriod} 
             periodSelected={periodSelected}
           />
-          
           <ChatContainer
             ref={chatContainerRef}
             messages={messages}
@@ -137,7 +130,11 @@ function App() {
             onPeriodSelect={handlePeriodSelect}
           >
             {showPeriodSelection && (
-              <PeriodSelection onSelect={handlePeriodSelect} />
+              <PeriodSelection
+                onSelect={handlePeriodSelect}
+                activePeriod={selectedPeriod}
+                periodSelected={periodSelected}
+              />
             )}
             {showWelcome && !showPeriodSelection && messages.length === 0 && (
               <WelcomeMessage />
@@ -159,6 +156,7 @@ function App() {
           onDeselectAll={handleDeselectAll}
         />
       </div>
+      <DonationCard />
     </div>
   );
 }

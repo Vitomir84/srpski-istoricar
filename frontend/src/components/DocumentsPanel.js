@@ -14,8 +14,15 @@ function DocumentsPanel({
 
   return (
     <div className="documents-panel">
+      <div className="documents-sveti-sava">
+        <img
+          src="/SvetiSavaMileseva.jpg"
+          alt="Свети Сава - Милешева"
+          className="documents-sveti-sava-img"
+        />
+      </div>
       <div className="documents-header">
-        <h3>📚 Документи</h3>
+        <h3>Документи</h3>
       </div>
       
       <div className="documents-controls">

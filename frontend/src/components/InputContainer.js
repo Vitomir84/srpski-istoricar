@@ -19,22 +19,24 @@ function InputContainer({ onSendMessage, disabled, isLoading }) {
   };
 
   return (
-    <div className="input-container">
-      <input
-        type="text"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyPress={handleKeyPress}
-        placeholder="Поставите питање о српској историји..."
-        disabled={disabled || isLoading}
-        autoComplete="off"
-      />
-      <button 
-        onClick={handleSend} 
-        disabled={disabled || isLoading || !message.trim()}
-      >
-        Пошаљи
-      </button>
+    <div className="input-wrapper">
+      <div className="input-container">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Поставите питање о српској историји..."
+          disabled={disabled || isLoading}
+          autoComplete="off"
+        />
+        <button 
+          onClick={handleSend} 
+          disabled={disabled || isLoading || !message.trim()}
+        >
+          Пошаљи
+        </button>
+      </div>
     </div>
   );
 }
