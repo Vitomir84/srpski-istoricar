@@ -50,6 +50,24 @@ logger.info("="*70)
 logger.info("🇷🇸 СРПСКИ ИСТОРИЧАР - покретање апликације...")
 logger.info("="*70)
 
+# Configuration - Load before creating FastAPI app
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
+FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
+BIBLIOGRAPHY_FILE = Path("bibliografija.json")
+COLLECTION_NAME = "serbian_history"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
+
+# Server Configuration
+BACKEND_HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "5000"))
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://127.0.0.1:3000"
+).split(",")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # Create FastAPI app
 app = FastAPI(
     title="Српски историчар API",
@@ -57,10 +75,10 @@ app = FastAPI(
     version="2.0"
 )
 
-# Configure CORS for React development server
+# Configure CORS - origins from environment variable
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,15 +107,6 @@ class HealthResponse(BaseModel):
     vectors_count: int
     collection: str
     mode: str
-
-# Configuration
-FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", "./faiss_data/serbian_history.index")
-FAISS_METADATA_PATH = os.getenv("FAISS_METADATA_PATH", "./faiss_data/metadata.pkl")
-BIBLIOGRAPHY_FILE = Path("bibliografija.json")
-COLLECTION_NAME = "serbian_history"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
 # Validate OpenAI configuration
 if not OPENAI_API_KEY:
@@ -656,7 +665,8 @@ if __name__ == '__main__':
         logger.warning("Покрените: python populate_database.py")
         logger.warning("="*70)
     
-    logger.info("\n🚀 Покретам FastAPI сервер на http://0.0.0.0:5000")
-    logger.info("📚 API документација доступна на: http://0.0.0.0:5000/docs\n")
+    logger.info(f"\n🚀 Покретам FastAPI сервер на http://{BACKEND_HOST}:{BACKEND_PORT}")
+    logger.info(f"📚 API документација доступна на: http://{BACKEND_HOST}:{BACKEND_PORT}/docs")
+    logger.info(f"🌐 Дозвољени CORS извори: {', '.join(ALLOWED_ORIGINS)}\n")
     
-    uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")
+    uvicorn.run(app, host=BACKEND_HOST, port=BACKEND_PORT, log_level="info")

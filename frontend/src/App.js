@@ -10,6 +10,9 @@ import WelcomeMessage from './components/WelcomeMessage';
 import DonationCard from './components/DonationCard';
 import SvetiSavaShowcase from './components/SvetiSavaShowcase';
 
+// API URL from environment variable - defaults to proxy for development
+const API_URL = process.env.REACT_APP_API_URL || '';
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +40,7 @@ function App() {
 
   const loadDocuments = async () => {
     try {
-      const response = await axios.get('/api/documents');
+      const response = await axios.get(`${API_URL}/api/documents`);
       if (response.data.documents) {
         setAllDocuments(response.data.documents);
       }
@@ -48,7 +51,7 @@ function App() {
 
   const checkServerHealth = async () => {
     try {
-      const response = await axios.get('/api/health');
+      const response = await axios.get(`${API_URL}/api/health`);
       console.log('Server status:', response.data);
     } catch (error) {
       console.error('Server not reachable:', error);
@@ -79,7 +82,7 @@ function App() {
         requestBody.selected_documents = selectedDocuments;
       }
 
-      const response = await axios.post('/api/chat', requestBody);
+      const response = await axios.post(`${API_URL}/api/chat`, requestBody);
       
       // Add agent message
       const agentMessage = { content: response.data.response, isUser: false };
